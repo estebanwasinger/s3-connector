@@ -44,7 +44,7 @@ import static org.mule.module.s3.util.InternalUtils.coalesce;
  * @author MuleSoft, Inc.
  */
 @Connector(name = "s3", schemaVersion = "2.0", friendlyName = "Amazon S3", minMuleVersion = "3.5",
-        metaData = MetaDataSwitch.OFF, connectivityTesting = ConnectivityTesting.DISABLED)
+        metaData = MetaDataSwitch.OFF)
 public class S3Connector
 {
     /**
@@ -788,6 +788,7 @@ public class S3Connector
      * @throws ConnectionException
      */
     @Connect
+    @TestConnectivity(active = false)
     public synchronized void connect(@ConnectionKey String accessKey, String secretKey) throws ConnectionException
     {
         if (client == null)
