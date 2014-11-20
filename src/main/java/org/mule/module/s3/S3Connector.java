@@ -43,8 +43,7 @@ import static org.mule.module.s3.util.InternalUtils.coalesce;
  * 
  * @author MuleSoft, Inc.
  */
-@Connector(name = "s3", schemaVersion = "2.0", friendlyName = "Amazon S3", minMuleVersion = "3.5",
-        metaData = MetaDataSwitch.OFF)
+@Connector(name = "s3", schemaVersion = "2.0", friendlyName = "Amazon S3", minMuleVersion = "3.5")
 public class S3Connector
 {
     /**
