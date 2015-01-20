@@ -1,16 +1,20 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <connector name="Amazon S3">
     <properties>
-    <connectivity-support>false</connectivity-support>
-    <OAuth-authentication>false</OAuth-authentication>
-    <metadata>none</metadata>
-    <datasense-enabled>false</datasense-enabled>
-    <transformer>false</transformer>
-  </properties>
+        <connectivity-support>false</connectivity-support>
+        <OAuth-authentication>false</OAuth-authentication>
+        <metadata>none</metadata>
+        <datasense-enabled>false</datasense-enabled>
+        <transformer>false</transformer>
+    </properties>
     <simpleConfig>
-        <required caption="Name" group="Basic Settings" javaType="java.lang.String" name="name" type="name">MyConnection</required>
-        <required caption="Access Key" group="Connection" javaType="java.lang.String" name="accessKey" prefix="s3" type="string"></required>
-        <required caption="Secret Key" group="Connection" javaType="java.lang.String" name="secretKey" prefix="s3" type="string"></required>
+        <required caption="Name" group="Basic Settings" javaType="java.lang.String" name="name" type="name">
+            MyConnection
+        </required>
+        <required caption="Access Key" group="Connection" javaType="java.lang.String" name="accessKey" prefix="s3"
+                  type="string"></required>
+        <required caption="Secret Key" group="Connection" javaType="java.lang.String" name="secretKey" prefix="s3"
+                  type="string"></required>
     </simpleConfig>
     <message-processors>
         <create-bucket name="Create bucket">
@@ -18,7 +22,9 @@
             <auto-paging>false</auto-paging>
             <query-support>false</query-support>
             <attributes>
-                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName" type="string">0643025a-b87e-4548-bc07-423d5f4c520a</required>
+                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName"
+                          type="string">0643025a-b87e-4548-bc07-423d5f4c520a
+                </required>
             </attributes>
             <childElements/>
         </create-bucket>
@@ -27,7 +33,9 @@
             <auto-paging>false</auto-paging>
             <query-support>false</query-support>
             <attributes>
-                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName" type="string">0643025a-b87e-4548-bc07-423d5f4c520a</required>
+                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName"
+                          type="string">0643025a-b87e-4548-bc07-423d5f4c520a
+                </required>
             </attributes>
             <childElements/>
         </delete-bucket>
@@ -36,7 +44,9 @@
             <auto-paging>false</auto-paging>
             <query-support>false</query-support>
             <attributes>
-                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName" type="string">0643025a-b87e-4548-bc07-423d5f4c520a</required>
+                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName"
+                          type="string">0643025a-b87e-4548-bc07-423d5f4c520a
+                </required>
             </attributes>
             <childElements/>
         </delete-bucket-website-configuration>
@@ -45,7 +55,9 @@
             <auto-paging>false</auto-paging>
             <query-support>false</query-support>
             <attributes>
-                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName" type="string">0643025a-b87e-4548-bc07-423d5f4c520a</required>
+                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName"
+                          type="string">0643025a-b87e-4548-bc07-423d5f4c520a
+                </required>
             </attributes>
             <childElements/>
         </get-bucket-policy>
@@ -54,8 +66,12 @@
             <auto-paging>false</auto-paging>
             <query-support>false</query-support>
             <attributes>
-                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName" type="string">0643025a-b87e-4548-bc07-423d5f4c520a</required>
-                <required caption="Policy Text" group="General" javaType="java.lang.String" name="policyText" type="string">{&quot;Version&quot;:&quot;2008-10-17&quot;,&quot;Statement&quot;:[{&quot;Sid&quot;:&quot;AddPerm&quot;,&quot;Effect&quot;:&quot;Allow&quot;,&quot;Principal&quot;:{&quot;AWS&quot;:&quot;*&quot;},&quot;Action&quot;:&quot;s3:GetObject&quot;,&quot;Resource&quot;:&quot;arn:aws:s3:::0643025a-b87e-4548-bc07-423d5f4c520a/*&quot;}]}</required>
+                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName"
+                          type="string">0643025a-b87e-4548-bc07-423d5f4c520a
+                </required>
+                <required caption="Policy Text" group="General" javaType="java.lang.String" name="policyText"
+                          type="string">{&quot;Version&quot;:&quot;2008-10-17&quot;,&quot;Statement&quot;:[{&quot;Sid&quot;:&quot;AddPerm&quot;,&quot;Effect&quot;:&quot;Allow&quot;,&quot;Principal&quot;:{&quot;AWS&quot;:&quot;*&quot;},&quot;Action&quot;:&quot;s3:GetObject&quot;,&quot;Resource&quot;:&quot;arn:aws:s3:::0643025a-b87e-4548-bc07-423d5f4c520a/*&quot;}]}
+                </required>
             </attributes>
             <childElements/>
         </set-bucket-policy>
@@ -64,17 +80,21 @@
             <auto-paging>false</auto-paging>
             <query-support>false</query-support>
             <attributes>
-                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName" type="string">0643025a-b87e-4548-bc07-423d5f4c520a</required>
+                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName"
+                          type="string">0643025a-b87e-4548-bc07-423d5f4c520a
+                </required>
             </attributes>
             <childElements/>
         </delete-bucket-policy>
-        
+
         <get-bucket-website-configuration name="Get bucket website configuration">
             <datamapper input="BucketWebsiteConfiguration" output=""/>
             <auto-paging>false</auto-paging>
             <query-support>false</query-support>
             <attributes>
-                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName" type="string">0643025a-b87e-4548-bc07-423d5f4c520a</required>
+                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName"
+                          type="string">0643025a-b87e-4548-bc07-423d5f4c520a
+                </required>
             </attributes>
             <childElements/>
         </get-bucket-website-configuration>
@@ -90,7 +110,9 @@
             <auto-paging>false</auto-paging>
             <query-support>false</query-support>
             <attributes>
-                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName" type="string">0643025a-b87e-4548-bc07-423d5f4c520a</required>
+                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName"
+                          type="string">0643025a-b87e-4548-bc07-423d5f4c520a
+                </required>
             </attributes>
             <childElements/>
         </list-objects>
@@ -99,7 +121,9 @@
             <auto-paging>false</auto-paging>
             <query-support>false</query-support>
             <attributes>
-                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName" type="string">0643025a-b87e-4548-bc07-423d5f4c520a</required>
+                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName"
+                          type="string">0643025a-b87e-4548-bc07-423d5f4c520a
+                </required>
             </attributes>
             <childElements/>
         </list-object-versions>
@@ -108,8 +132,11 @@
             <auto-paging>false</auto-paging>
             <query-support>false</query-support>
             <attributes>
-                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName" type="string">0643025a-b87e-4548-bc07-423d5f4c520a</required>
-                <required caption="Key" group="General" javaType="java.lang.String" name="key" type="string">key-ref</required>
+                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName"
+                          type="string">0643025a-b87e-4548-bc07-423d5f4c520a
+                </required>
+                <required caption="Key" group="General" javaType="java.lang.String" name="key" type="string">key-ref
+                </required>
             </attributes>
             <childElements/>
         </create-object>
@@ -118,8 +145,11 @@
             <auto-paging>false</auto-paging>
             <query-support>false</query-support>
             <attributes>
-                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName" type="string">0643025a-b87e-4548-bc07-423d5f4c520a</required>
-                <required caption="Key" group="General" javaType="java.lang.String" name="key" type="string">key-ref</required>
+                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName"
+                          type="string">0643025a-b87e-4548-bc07-423d5f4c520a
+                </required>
+                <required caption="Key" group="General" javaType="java.lang.String" name="key" type="string">key-ref
+                </required>
             </attributes>
             <childElements/>
         </delete-object>
@@ -128,7 +158,9 @@
             <auto-paging>false</auto-paging>
             <query-support>false</query-support>
             <attributes>
-                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName" type="string">0643025a-b87e-4548-bc07-423d5f4c520a</required>
+                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName"
+                          type="string">0643025a-b87e-4548-bc07-423d5f4c520a
+                </required>
             </attributes>
             <childElements/>
         </delete-objects>
@@ -137,9 +169,14 @@
             <auto-paging>false</auto-paging>
             <query-support>false</query-support>
             <attributes>
-                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName" type="string">0643025a-b87e-4548-bc07-423d5f4c520a</required>
-                <required caption="Key" group="General" javaType="java.lang.String" name="key" type="string">key-ref</required>
-                <required caption="Storage Class" group="General" javaType="org.mule.module.s3.StorageClass" name="storageClass" type="enum">REDUCED_REDUNDANCY</required>
+                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName"
+                          type="string">0643025a-b87e-4548-bc07-423d5f4c520a
+                </required>
+                <required caption="Key" group="General" javaType="java.lang.String" name="key" type="string">key-ref
+                </required>
+                <required caption="Storage Class" group="General" javaType="org.mule.module.s3.StorageClass"
+                          name="storageClass" type="enum">REDUCED_REDUNDANCY
+                </required>
             </attributes>
             <childElements/>
         </set-object-storage-class>
@@ -148,9 +185,15 @@
             <auto-paging>false</auto-paging>
             <query-support>false</query-support>
             <attributes>
-                <required caption="Source Bucket Name" group="General" javaType="java.lang.String" name="sourceBucketName" type="string">0643025a-b87e-4548-bc07-423d5f4c520a</required>
-                <required caption="Source Key" group="General" javaType="java.lang.String" name="sourceKey" type="string">sourcekey</required>
-                <required caption="Destination Key" group="General" javaType="java.lang.String" name="destinationKey" type="string">destinationkey</required>
+                <required caption="Source Bucket Name" group="General" javaType="java.lang.String"
+                          name="sourceBucketName" type="string">0643025a-b87e-4548-bc07-423d5f4c520a
+                </required>
+                <required caption="Source Key" group="General" javaType="java.lang.String" name="sourceKey"
+                          type="string">sourcekey
+                </required>
+                <required caption="Destination Key" group="General" javaType="java.lang.String" name="destinationKey"
+                          type="string">destinationkey
+                </required>
             </attributes>
             <childElements/>
         </copy-object>
@@ -159,8 +202,11 @@
             <auto-paging>false</auto-paging>
             <query-support>false</query-support>
             <attributes>
-                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName" type="string">0643025a-b87e-4548-bc07-423d5f4c520a</required>
-                <required caption="Key" group="General" javaType="java.lang.String" name="key" type="string">key-ref</required>
+                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName"
+                          type="string">0643025a-b87e-4548-bc07-423d5f4c520a
+                </required>
+                <required caption="Key" group="General" javaType="java.lang.String" name="key" type="string">key-ref
+                </required>
             </attributes>
             <childElements/>
         </create-object-presigned-uri>
@@ -169,8 +215,11 @@
             <auto-paging>false</auto-paging>
             <query-support>false</query-support>
             <attributes>
-                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName" type="string">0643025a-b87e-4548-bc07-423d5f4c520a</required>
-                <required caption="Key" group="General" javaType="java.lang.String" name="key" type="string">key-ref</required>
+                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName"
+                          type="string">0643025a-b87e-4548-bc07-423d5f4c520a
+                </required>
+                <required caption="Key" group="General" javaType="java.lang.String" name="key" type="string">key-ref
+                </required>
             </attributes>
             <childElements/>
         </get-object-content>
@@ -179,8 +228,11 @@
             <auto-paging>false</auto-paging>
             <query-support>false</query-support>
             <attributes>
-                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName" type="string">0643025a-b87e-4548-bc07-423d5f4c520a</required>
-                <required caption="Key" group="General" javaType="java.lang.String" name="key" type="string">key-ref</required>
+                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName"
+                          type="string">0643025a-b87e-4548-bc07-423d5f4c520a
+                </required>
+                <required caption="Key" group="General" javaType="java.lang.String" name="key" type="string">key-ref
+                </required>
             </attributes>
             <childElements/>
         </get-object>
@@ -189,8 +241,11 @@
             <auto-paging>false</auto-paging>
             <query-support>false</query-support>
             <attributes>
-                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName" type="string">0643025a-b87e-4548-bc07-423d5f4c520a</required>
-                <required caption="Key" group="General" javaType="java.lang.String" name="key" type="string">key-ref</required>
+                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName"
+                          type="string">0643025a-b87e-4548-bc07-423d5f4c520a
+                </required>
+                <required caption="Key" group="General" javaType="java.lang.String" name="key" type="string">key-ref
+                </required>
             </attributes>
             <childElements/>
         </get-object-metadata>
@@ -199,8 +254,13 @@
             <auto-paging>false</auto-paging>
             <query-support>false</query-support>
             <attributes>
-                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName" type="string">0643025a-b87e-4548-bc07-423d5f4c520a</required>
-                <required caption="Versioning Status" group="General" javaType="org.mule.module.s3.simpleapi.VersioningStatus" name="versioningStatus" type="enum">ENABLED</required>
+                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName"
+                          type="string">0643025a-b87e-4548-bc07-423d5f4c520a
+                </required>
+                <required caption="Versioning Status" group="General"
+                          javaType="org.mule.module.s3.simpleapi.VersioningStatus" name="versioningStatus" type="enum">
+                    ENABLED
+                </required>
             </attributes>
             <childElements/>
         </set-bucket-versioning-status>
@@ -209,7 +269,9 @@
             <auto-paging>false</auto-paging>
             <query-support>false</query-support>
             <attributes>
-                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName" type="string">0643025a-b87e-4548-bc07-423d5f4c520a</required>
+                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName"
+                          type="string">0643025a-b87e-4548-bc07-423d5f4c520a
+                </required>
             </attributes>
             <childElements/>
         </get-bucket-versioning-configuration>
@@ -218,8 +280,11 @@
             <auto-paging>false</auto-paging>
             <query-support>false</query-support>
             <attributes>
-                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName" type="string">0643025a-b87e-4548-bc07-423d5f4c520a</required>
-                <required caption="Key" group="General" javaType="java.lang.String" name="key" type="string">key-ref</required>
+                <required caption="Bucket Name" group="General" javaType="java.lang.String" name="bucketName"
+                          type="string">0643025a-b87e-4548-bc07-423d5f4c520a
+                </required>
+                <required caption="Key" group="General" javaType="java.lang.String" name="key" type="string">key-ref
+                </required>
             </attributes>
             <childElements/>
         </create-object-uri>

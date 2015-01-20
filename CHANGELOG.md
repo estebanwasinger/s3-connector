@@ -1,9 +1,11 @@
 Amazon S3 Anypoint Connector Release Notes
 ==========================================
 
-Date: 12-Jul-2014
+Date: 10-Mar-2015
 
-Version: 2.8.1
+Version: 3.0.0
+
+Supported Mule Runtime Versions: 3.5.x or higher
 
 Supported API versions
 ------------------------
@@ -14,40 +16,47 @@ Supported Operations:
 * Copy Object
 * Create Bucket
 * Create Object
-* Create Object with a Presigned URI
+* Create Object Presigned URI
 * Create Object URI
-* Delete a Bucket
-* Delete a Bucket Policy
-* Delete a Bucket Website Configuration
-* Delete a single Object
-* Delete multiple Objects
-* Get a Bucket Policy
-* Get a Bucket's Versioning Configuration
-* Get a Bucket's Website Configuration
-* Get an Object
-* Get an Object's Configuration
-* Get an Object's Metadata
+* Delete Bucket
+* Delete Bucket Policy
+* Delete Bucket Website Configuration
+* Delete Object
+* Delete Objects
+* Get Bucket Location
+* Get Bucket Policy
+* Get Bucket Versioning Configuration
+* Get Bucket Website Configuration
+* Get Object
+* Get Object Content
+* Get Object Metadata
 * List Buckets
-* List an Object's Versions
+* List Object Versions
 * List Objects
-* Set a Bucket's Policy
-* Set a Bucket's Versioning Status
-* Set a Bucket's Website Configuration
-* Set an Object's Storage Class
-
-Supported Mule Runtime Versions: 3.4.x, 3.5.x
+* Set Bucket Policy
+* Set Bucket Versioning Status
+* Set Bucket Website Configuration
+* Set Object Storage Class
 
 New Features and Functionality
 ------------------------------
+
+Updated the Devkit & Tested for 3.6.0 release.
+
+Updated the AWS Java SDK from 1.7.13 to 1.9.19.
+
+Added Get Bucket Location operation.
+
+Updated the test cases and demo project.
+
+Previous Release
+----------------
 
 Updated the Devkit & Tested for 3.5.1 release.
 
 Updated the AWS Java SDK from 1.7.2 to 1.7.13.
 
 Updated the demo project to support the latest 3.5.1 Anypoint Studio.
-
-Previous Release
-------------------------------
 
 Updated S3Connector.java for the latest versions (3.5.0) of DevKit Annotations (e.g. removing @Default @Optional)
 

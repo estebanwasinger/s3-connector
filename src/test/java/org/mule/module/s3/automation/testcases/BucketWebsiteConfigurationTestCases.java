@@ -1,145 +1,72 @@
 /**
- * Copyright (c) MuleSoft, Inc. All rights reserved. http://www.mulesoft.com
- *
- * The software in this package is published under the terms of the CPAL v1.0
- * license, a copy of which has been included with this distribution in the
- * LICENSE.md file.
+ * (c) 2003-2015 MuleSoft, Inc. The software in this package is
+ * published under the terms of the CPAL v1.0 license, a copy of which
+ * has been included with this distribution in the LICENSE.md file.
  */
 
 package org.mule.module.s3.automation.testcases;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
-
-import java.util.HashMap;
-import java.util.UUID;
-
+import com.amazonaws.services.s3.model.BucketWebsiteConfiguration;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.mule.api.MuleEvent;
-import org.mule.api.processor.MessageProcessor;
+import org.mule.module.s3.automation.RegressionTests;
+import org.mule.module.s3.automation.S3TestParent;
+import org.mule.module.s3.automation.SmokeTests;
+import org.mule.modules.tests.ConnectorTestUtils;
 
-import com.amazonaws.services.s3.model.BucketWebsiteConfiguration;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class BucketWebsiteConfigurationTestCases extends S3TestParent {
 
     @Before
-	public void setUp(){
+    public void setUp() throws Exception {
+        initializeTestRunMessage("bucketWebsiteConfigurationTestData");
+        runFlowAndGetPayload("create-bucket");
+    }
 
-        String bucketName = UUID.randomUUID().toString();
-		
-		testObjects = new HashMap<String, Object>();
-        BucketWebsiteConfiguration bucketWebsiteConfiguration =
-                (BucketWebsiteConfiguration) context.getBean("bucketWebsiteConfigurationTestData");
-		testObjects.put("bucketName", bucketName);
-        testObjects.put("bucketWebsiteConfiguration", bucketWebsiteConfiguration);
-    	
-		try {
 
-			MessageProcessor flow = lookupMessageProcessor("create-bucket");
-			flow.process(getTestEvent(testObjects));
-	
-		} catch (Exception e) {
-			e.printStackTrace();
-			fail();
-		}
-			
-	}
-	
-	@After
-	public void tearDown() {
-		
-		try {
-				
-			MessageProcessor flow = lookupMessageProcessor("delete-bucket");
-			flow.process(getTestEvent(testObjects));
-			
-		} catch (Exception e) {
-				e.printStackTrace();
-				fail();
-		}
-		
-	}
-	
-    @Category({SanityTests.class, RegressionTests.class})
-	@Test
-	public void testSetAndGetBucketWebsiteConfiguration() {
-    	
-    	MessageProcessor setBucketWebsiteConfigurationFlow = lookupMessageProcessor("set-bucket-website-configuration");
-      	
-		try {
-	
-			setBucketWebsiteConfigurationFlow.process(getTestEvent(testObjects));
-			
-			MessageProcessor getBucketWebsiteConfigurationFlow = lookupMessageProcessor("get-bucket-website-configuration");
-			MuleEvent response = getBucketWebsiteConfigurationFlow.process(getTestEvent(testObjects));
-			
-			BucketWebsiteConfiguration bucketWebsiteConfiguration = (BucketWebsiteConfiguration) response.getMessage().getPayload();
-			
-			assertEquals(((BucketWebsiteConfiguration) testObjects.get("bucketWebsiteConfiguration")).getIndexDocumentSuffix(),
+    @Category({SmokeTests.class, RegressionTests.class})
+    @Test
+    public void testSetAndGetBucketWebsiteConfiguration() {
+
+        try {
+            runFlowAndGetPayload("set-bucket-website-configuration");
+
+            Thread.sleep(5000);
+
+            BucketWebsiteConfiguration bucketWebsiteConfiguration = runFlowAndGetPayload("get-bucket-website-configuration");
+
+            assertEquals(((BucketWebsiteConfiguration) getTestRunMessageValue("bucketWebsiteConfiguration")).getIndexDocumentSuffix(),
                     bucketWebsiteConfiguration.getIndexDocumentSuffix());
-			assertNull(bucketWebsiteConfiguration.getErrorDocument());
-			
-		} catch (Exception e) {
-			e.printStackTrace();
-			fail();
-		}
-     
-	}
-    
-    @Category({RegressionTests.class})
-	@Test
-	public void testSetAndGetBucketWebsiteConfigurationOptionalAttributes() {
-    	
-    	MessageProcessor setBucketWebsiteConfigurationFlow = lookupMessageProcessor("set-bucket-website-configuration-optional-attributes");
-      	
-		try {
-	
-			setBucketWebsiteConfigurationFlow.process(getTestEvent(testObjects));
-			
-			MessageProcessor getBucketWebsiteConfigurationFlow = lookupMessageProcessor("get-bucket-website-configuration");
-			MuleEvent response = getBucketWebsiteConfigurationFlow.process(getTestEvent(testObjects));
-			
-			BucketWebsiteConfiguration bucketWebsiteConfiguration = (BucketWebsiteConfiguration) response.getMessage().getPayload();
-			
-			assertEquals(((BucketWebsiteConfiguration) testObjects.get("bucketWebsiteConfiguration")).getIndexDocumentSuffix(),
-                    bucketWebsiteConfiguration.getIndexDocumentSuffix());
-			assertEquals(((BucketWebsiteConfiguration) testObjects.get("bucketWebsiteConfiguration")).getErrorDocument(),
+            assertEquals(((BucketWebsiteConfiguration) getTestRunMessageValue("bucketWebsiteConfiguration")).getErrorDocument(),
                     bucketWebsiteConfiguration.getErrorDocument());
-			
-		} catch (Exception e) {
-			e.printStackTrace();
-			fail();
-		}
-     
-	}
-    
-    @Category({SanityTests.class, RegressionTests.class})
-	@Test
-	public void testDeleteBucketWebsiteConfiguration() {
-    	
-    	MessageProcessor setBucketWebsiteConfigurationFlow = lookupMessageProcessor("set-bucket-website-configuration");
-      	
-		try {
-	
-			setBucketWebsiteConfigurationFlow.process(getTestEvent(testObjects));
-			
-			MessageProcessor deleteBucketWebsiteConfigurationFlow = lookupMessageProcessor("delete-bucket-website-configuration");
-			deleteBucketWebsiteConfigurationFlow.process(getTestEvent(testObjects));
-			
-			MessageProcessor getBucketWebsiteConfigurationFlow = lookupMessageProcessor("get-bucket-website-configuration");
-			MuleEvent response = getBucketWebsiteConfigurationFlow.process(getTestEvent(testObjects));
-			
-			assertEquals("{NullPayload}", response.getMessage().getPayload().toString());
-			
-		} catch (Exception e) {
-			e.printStackTrace();
-			fail();
-		}
-     
-	}
-    
+        } catch (Exception e) {
+            fail(ConnectorTestUtils.getStackTrace(e));
+        }
+    }
+
+    @Category({SmokeTests.class, RegressionTests.class})
+    @Test
+    public void testDeleteBucketWebsiteConfiguration() {
+
+        try {
+
+            runFlowAndGetPayload("set-bucket-website-configuration");
+
+            runFlowAndGetPayload("delete-bucket-website-configuration");
+
+            assertEquals(NULLPAYLOAD, runFlowAndGetPayload("get-bucket-website-configuration").toString());
+
+        } catch (Exception e) {
+            fail(ConnectorTestUtils.getStackTrace(e));
+        }
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        runFlowAndGetPayload("delete-bucket");
+    }
 }
