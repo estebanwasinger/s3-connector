@@ -16,21 +16,18 @@ import static com.amazonaws.services.s3.model.StorageClass.Standard;
  * A wrapper over {@link com.amazonaws.services.s3.model.StorageClass}, as a
  * workaround over mule cloud connector api issue regarding enums processing
  */
-public enum StorageClass
-{
+public enum StorageClass {
     STANDARD(Standard),
 
     REDUCED_REDUNDANCY(ReducedRedundancy);
 
     private final com.amazonaws.services.s3.model.StorageClass s3Equivalent;
 
-    StorageClass(com.amazonaws.services.s3.model.StorageClass s3Equivalent)
-    {
+    StorageClass(com.amazonaws.services.s3.model.StorageClass s3Equivalent) {
         this.s3Equivalent = s3Equivalent;
     }
 
-    public com.amazonaws.services.s3.model.StorageClass toS3Equivalent()
-    {
+    public com.amazonaws.services.s3.model.StorageClass toS3Equivalent() {
         return s3Equivalent;
     }
 

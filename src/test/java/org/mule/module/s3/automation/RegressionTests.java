@@ -6,10 +6,10 @@
  * LICENSE.md file.
  */
 
-package org.mule.module.s3.automation.testcases;
+package org.mule.module.s3.automation;
 
-public interface SanityTests {
-	
-	/* category marker */ 
+public interface RegressionTests {
+
+	/* category marker */
 
 }

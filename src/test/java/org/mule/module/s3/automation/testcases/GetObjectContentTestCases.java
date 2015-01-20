@@ -8,8 +8,19 @@
 
 package org.mule.module.s3.automation.testcases;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.S3ObjectInputStream;
+import com.google.common.io.ByteSource;
+import org.apache.commons.io.IOUtils;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.mule.api.MuleEvent;
+import org.mule.api.processor.MessageProcessor;
+import org.mule.module.s3.automation.RegressionTests;
+import org.mule.module.s3.automation.S3TestParent;
+import org.mule.module.s3.automation.SmokeTests;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,345 +32,345 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import org.apache.commons.io.IOUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.mule.api.MuleEvent;
-import org.mule.api.processor.MessageProcessor;
-
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.S3ObjectInputStream;
-import com.google.common.io.ByteSource;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class GetObjectContentTestCases extends S3TestParent {
-	
-	String bucketName;
-	
-	private void getObjectContentVerifications(Map<String, Object> testObjects){
-		
-		try {
-			
-			MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-from-message");
-			createObjectFlow.process(getTestEvent(testObjects));
 
-			MessageProcessor getObjectFlow = lookupMessageProcessor("get-object");
-			MuleEvent getObjectResponse = getObjectFlow.process(getTestEvent(testObjects));
-			
-			S3Object s3object = (S3Object) getObjectResponse.getMessage().getPayload();
-			S3ObjectInputStream expectedObjectContent = s3object.getObjectContent();
+    String bucketName;
 
-			MessageProcessor getObjectContentFlow = lookupMessageProcessor("get-object-content");
-			MuleEvent getObjectContentResponse = getObjectContentFlow.process(getTestEvent(testObjects));
+    private void getObjectContentVerifications(Map<String, Object> testObjects) {
 
-			S3ObjectInputStream actualObjectContent = (S3ObjectInputStream) getObjectContentResponse.getMessage().getPayload();
+        try {
 
-			assertTrue(IOUtils.contentEquals(expectedObjectContent, actualObjectContent));
+            MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-from-message");
+            createObjectFlow.process(getTestEvent(testObjects));
 
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		}
-		
-	}
-	
-	/**
-	 * Utility method to compare InputStreams without modifying their content. Use this instead
-	 * of IOUtils.contentEquals.
-	 */
-	private void assertEqualStreams(InputStream stream1, InputStream stream2) throws IOException {
-		ByteSource bytes1 = ByteSource.wrap(IOUtils.toByteArray(stream1));
-		ByteSource bytes2 = ByteSource.wrap(IOUtils.toByteArray(stream2));
-		if (!bytes1.contentEquals(bytes2)) {
-			throw new AssertionError("Stream contents were not equal. Stream lengths were " + bytes1.size() + " and " + bytes2.size() + " respectively.");
-		}
-	}
-	
-	private void getObjectContentOptionalAttributesVerifications(Map<String, Object> testObjects, HashMap<String,Object> updatedUserMetadata){
-		
-		MessageProcessor createObjectFlow;
-		MuleEvent createObjectResponse;
-		
- 		MessageProcessor getObjectOptionalAttributesFlow;
- 		MuleEvent getObjectOptionalAttributesResponse;
+            MessageProcessor getObjectFlow = lookupMessageProcessor("get-object");
+            MuleEvent getObjectResponse = getObjectFlow.process(getTestEvent(testObjects));
 
- 		S3ObjectInputStream expectedObjectContent;
- 		S3ObjectInputStream actualObjectContent;
- 		
- 		ByteSource expectedBytes;
- 		ByteSource actualBytes;
-		
-		testObjects.put("versioningStatus", "ENABLED");
-		
-		try {
-			
-			MessageProcessor setBucketVersioningStatusFlow = lookupMessageProcessor("set-bucket-versioning-status");
-			setBucketVersioningStatusFlow.process(getTestEvent(testObjects)); 
-			
-			createObjectFlow = lookupMessageProcessor("create-object-child-elements-from-message");
-			createObjectResponse = createObjectFlow.process(getTestEvent(testObjects));
-			Thread.sleep(5000);
-			
-			testObjects.put("versionId", (String) createObjectResponse.getMessage().getPayload());
-			
-			MessageProcessor getObjectFlow = lookupMessageProcessor("get-object");
-			MuleEvent getObjectResponse = getObjectFlow.process(getTestEvent(testObjects));
-			S3Object s3object = (S3Object) getObjectResponse.getMessage().getPayload();
-			expectedObjectContent = s3object.getObjectContent();
-			expectedBytes = ByteSource.wrap(IOUtils.toByteArray(expectedObjectContent));
-			
-			// get-object-content-optional-attributes-unmodified-since
-			
-			Date lastModified = s3object.getObjectMetadata().getLastModified();
-			testObjects.put("unmodifiedSince", lastModified);
-			
-			getObjectOptionalAttributesFlow = lookupMessageProcessor("get-object-content-optional-attributes-unmodified-since");
-			getObjectOptionalAttributesResponse = getObjectOptionalAttributesFlow.process(getTestEvent(testObjects));
-			actualObjectContent = (S3ObjectInputStream) getObjectOptionalAttributesResponse.getMessage().getPayload();
-			actualBytes = ByteSource.wrap(IOUtils.toByteArray(actualObjectContent));
-			
-			assertTrue(expectedBytes.contentEquals(actualBytes));
+            S3Object s3object = (S3Object) getObjectResponse.getMessage().getPayload();
+            S3ObjectInputStream expectedObjectContent = s3object.getObjectContent();
 
-			// get-object-content-optional-attributes-version-id
-			
-			getObjectOptionalAttributesFlow = lookupMessageProcessor("get-object-content-optional-attributes-version-id");
-			getObjectOptionalAttributesResponse = getObjectOptionalAttributesFlow.process(getTestEvent(testObjects));
-			actualObjectContent = (S3ObjectInputStream) getObjectOptionalAttributesResponse.getMessage().getPayload();
-			actualBytes = ByteSource.wrap(IOUtils.toByteArray(actualObjectContent));
-			
-			assertTrue(expectedBytes.contentEquals(actualBytes));
-			
-			// update the object
-			
-			testObjects.put("userMetadata", updatedUserMetadata);
-			createObjectFlow = lookupMessageProcessor("create-object-child-elements-from-message");
-			createObjectFlow.process(getTestEvent(testObjects));
-			Thread.sleep(5000);
-			
-			// get-object-content-optional-attributes-modified-since
-			
-			testObjects.put("modifiedSince", lastModified);
-			
-			getObjectOptionalAttributesFlow = lookupMessageProcessor("get-object-content-optional-attributes-modified-since");
-			getObjectOptionalAttributesResponse = getObjectOptionalAttributesFlow.process(getTestEvent(testObjects));
-			actualObjectContent = (S3ObjectInputStream) getObjectOptionalAttributesResponse.getMessage().getPayload();
-			actualBytes = ByteSource.wrap(IOUtils.toByteArray(actualObjectContent));
-			
-			assertTrue(expectedBytes.contentEquals(actualBytes));
-			
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		}
-		
-	}
-	
-	@Before
-	public void setUp(){
+            MessageProcessor getObjectContentFlow = lookupMessageProcessor("get-object-content");
+            MuleEvent getObjectContentResponse = getObjectContentFlow.process(getTestEvent(testObjects));
 
-		bucketName = UUID.randomUUID().toString();
-		
-		testObjects = new HashMap<String, Object>();
-		testObjects.put("bucketName", bucketName);
-    	
-		try {
+            S3ObjectInputStream actualObjectContent = (S3ObjectInputStream) getObjectContentResponse.getMessage().getPayload();
 
-			MessageProcessor flow = lookupMessageProcessor("create-bucket");
-			flow.process(getTestEvent(testObjects));
-	
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		}
-			
-	}
-	
-	@After
-	public void tearDown() {
-		
-		try {
-				
-			MessageProcessor flow = lookupMessageProcessor("delete-bucket-optional-attributes");
-			flow.process(getTestEvent(testObjects));
-			
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-				e.printStackTrace();
-				fail();
-		}
-		
-	}
-	
-    @Category({SanityTests.class, RegressionTests.class})
-	@Test
-	public void testGetInputStreamObjectContent() {
-    	
-    	InputStream inputStream = null;
-    	
-		testObjects.putAll((HashMap<String,Object>) context.getBean("getInputStreamObjectContentTestData"));
+            assertTrue(IOUtils.contentEquals(expectedObjectContent, actualObjectContent));
 
-    	String host = testObjects.get("host").toString();
-    	String path = testObjects.get("path").toString();
-    	String urlString = String.format("http://%s/%s",host, path);
-    	
-		try {
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+        }
 
-	    	URL url = new URL(urlString);
-	    	URLConnection connection = url.openConnection();
-	    	inputStream = connection.getInputStream();	    
-	    	
-	    	testObjects.put("contentRef", inputStream);
+    }
 
-	    	getObjectContentVerifications(testObjects);
-		
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		} finally {
-			if (inputStream != null) try { inputStream.close(); } catch (IOException logOrIgnore) {}
-		}
-     
-	}
-    
-    @Category({SanityTests.class, RegressionTests.class})
-	@Test
-	public void testGetByteArrayObjectContent() {
-    	
-		testObjects.putAll((HashMap<String,Object>) context.getBean("getByteArrayObjectContentTestData"));
-    	
-    	byte data[] = bucketName.getBytes();
-    	testObjects.put("contentRef", data);
-    	
-    	getObjectContentVerifications(testObjects);
-     
-	}
-    
-    @Category({SanityTests.class, RegressionTests.class})
-	@Test
-	public void testGetFileObjectContent() {
-    	
-    	File temp = null;
-    	
-    	testObjects.putAll((HashMap<String,Object>) context.getBean("getFileObjectContentTestData"));
-    	
-		try {
-			
-			temp = File.createTempFile("temp-file-name", ".tmp"); 
-			
-	    	testObjects.put("contentRef", temp);
+    /**
+     * Utility method to compare InputStreams without modifying their content. Use this instead
+     * of IOUtils.contentEquals.
+     */
+    private void assertEqualStreams(InputStream stream1, InputStream stream2) throws IOException {
+        ByteSource bytes1 = ByteSource.wrap(IOUtils.toByteArray(stream1));
+        ByteSource bytes2 = ByteSource.wrap(IOUtils.toByteArray(stream2));
+        if (!bytes1.contentEquals(bytes2)) {
+            throw new AssertionError("Stream contents were not equal. Stream lengths were " + bytes1.size() + " and " + bytes2.size() + " respectively.");
+        }
+    }
 
-	    	getObjectContentVerifications(testObjects);
-	    	
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		} finally {
-			if (temp != null) {	temp.delete(); }
-		}
-     
-	}
-    
-    @Category({SanityTests.class, RegressionTests.class})
- 	@Test
- 	public void testGetStringObjectContent() {
-     	
- 		testObjects.putAll((HashMap<String,Object>) context.getBean("getStringObjectContentTestData"));
- 		
- 		getObjectContentVerifications(testObjects);
- 		
- 	}
-    
-    @Category({RegressionTests.class})
- 	@Test
- 	public void testGetByteArrayObjectContentOptionalAttributes() {
-     	
- 		testObjects.putAll((HashMap<String,Object>) context.getBean("getByteArrayObjectContentTestData"));
- 		HashMap<String,Object> updatedUserMetadata = (HashMap<String,Object>) context.getBean("getByteArrayObjectContentUpdatedUserMetadata");
+    private void getObjectContentOptionalAttributesVerifications(Map<String, Object> testObjects, HashMap<String, Object> updatedUserMetadata) {
 
-     	byte data[] = bucketName.getBytes();
-     	testObjects.put("contentRef", data);
-     	
-     	getObjectContentOptionalAttributesVerifications(testObjects, updatedUserMetadata);
-      
- 	}
+        MessageProcessor createObjectFlow;
+        MuleEvent createObjectResponse;
 
+        MessageProcessor getObjectOptionalAttributesFlow;
+        MuleEvent getObjectOptionalAttributesResponse;
 
+        S3ObjectInputStream expectedObjectContent;
+        S3ObjectInputStream actualObjectContent;
+
+        ByteSource expectedBytes;
+        ByteSource actualBytes;
+
+        testObjects.put("versioningStatus", "ENABLED");
+
+        try {
+
+            MessageProcessor setBucketVersioningStatusFlow = lookupMessageProcessor("set-bucket-versioning-status");
+            setBucketVersioningStatusFlow.process(getTestEvent(testObjects));
+
+            createObjectFlow = lookupMessageProcessor("create-object-child-elements-from-message");
+            createObjectResponse = createObjectFlow.process(getTestEvent(testObjects));
+            Thread.sleep(5000);
+
+            testObjects.put("versionId", (String) createObjectResponse.getMessage().getPayload());
+
+            MessageProcessor getObjectFlow = lookupMessageProcessor("get-object");
+            MuleEvent getObjectResponse = getObjectFlow.process(getTestEvent(testObjects));
+            S3Object s3object = (S3Object) getObjectResponse.getMessage().getPayload();
+            expectedObjectContent = s3object.getObjectContent();
+            expectedBytes = ByteSource.wrap(IOUtils.toByteArray(expectedObjectContent));
+
+            // get-object-content-optional-attributes-unmodified-since
+
+            Date lastModified = s3object.getObjectMetadata().getLastModified();
+            testObjects.put("unmodifiedSince", lastModified);
+
+            getObjectOptionalAttributesFlow = lookupMessageProcessor("get-object-content-optional-attributes-unmodified-since");
+            getObjectOptionalAttributesResponse = getObjectOptionalAttributesFlow.process(getTestEvent(testObjects));
+            actualObjectContent = (S3ObjectInputStream) getObjectOptionalAttributesResponse.getMessage().getPayload();
+            actualBytes = ByteSource.wrap(IOUtils.toByteArray(actualObjectContent));
+
+            assertTrue(expectedBytes.contentEquals(actualBytes));
+
+            // get-object-content-optional-attributes-version-id
+
+            getObjectOptionalAttributesFlow = lookupMessageProcessor("get-object-content-optional-attributes-version-id");
+            getObjectOptionalAttributesResponse = getObjectOptionalAttributesFlow.process(getTestEvent(testObjects));
+            actualObjectContent = (S3ObjectInputStream) getObjectOptionalAttributesResponse.getMessage().getPayload();
+            actualBytes = ByteSource.wrap(IOUtils.toByteArray(actualObjectContent));
+
+            assertTrue(expectedBytes.contentEquals(actualBytes));
+
+            // update the object
+
+            testObjects.put("userMetadata", updatedUserMetadata);
+            createObjectFlow = lookupMessageProcessor("create-object-child-elements-from-message");
+            createObjectFlow.process(getTestEvent(testObjects));
+            Thread.sleep(5000);
+
+            // get-object-content-optional-attributes-modified-since
+
+            testObjects.put("modifiedSince", lastModified);
+
+            getObjectOptionalAttributesFlow = lookupMessageProcessor("get-object-content-optional-attributes-modified-since");
+            getObjectOptionalAttributesResponse = getObjectOptionalAttributesFlow.process(getTestEvent(testObjects));
+            actualObjectContent = (S3ObjectInputStream) getObjectOptionalAttributesResponse.getMessage().getPayload();
+            actualBytes = ByteSource.wrap(IOUtils.toByteArray(actualObjectContent));
+
+            assertTrue(expectedBytes.contentEquals(actualBytes));
+
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+        }
+
+    }
+
+    @Before
+    public void setUp() {
+
+        bucketName = UUID.randomUUID().toString();
+
+        testObjects = new HashMap<String, Object>();
+        testObjects.put("bucketName", bucketName);
+
+        try {
+
+            MessageProcessor flow = lookupMessageProcessor("create-bucket");
+            flow.process(getTestEvent(testObjects));
+
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+        }
+
+    }
+
+    @After
+    public void tearDown() {
+
+        try {
+
+            MessageProcessor flow = lookupMessageProcessor("delete-bucket-optional-attributes");
+            flow.process(getTestEvent(testObjects));
+
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+        }
+
+    }
+
+    @Category({SmokeTests.class, RegressionTests.class})
+    @Test
+    public void testGetInputStreamObjectContent() {
+
+        InputStream inputStream = null;
+
+        testObjects.putAll((HashMap<String, Object>) context.getBean("getInputStreamObjectContentTestData"));
+
+        String host = testObjects.get("host").toString();
+        String path = testObjects.get("path").toString();
+        String urlString = String.format("http://%s/%s", host, path);
+
+        try {
+
+            URL url = new URL(urlString);
+            URLConnection connection = url.openConnection();
+            inputStream = connection.getInputStream();
+
+            testObjects.put("contentRef", inputStream);
+
+            getObjectContentVerifications(testObjects);
+
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+        } finally {
+            if (inputStream != null) try {
+                inputStream.close();
+            } catch (IOException logOrIgnore) {
+            }
+        }
+
+    }
+
+    @Category({SmokeTests.class, RegressionTests.class})
+    @Test
+    public void testGetByteArrayObjectContent() {
+
+        testObjects.putAll((HashMap<String, Object>) context.getBean("getByteArrayObjectContentTestData"));
+
+        byte data[] = bucketName.getBytes();
+        testObjects.put("contentRef", data);
+
+        getObjectContentVerifications(testObjects);
+
+    }
+
+    @Category({SmokeTests.class, RegressionTests.class})
+    @Test
+    public void testGetFileObjectContent() {
+
+        File temp = null;
+
+        testObjects.putAll((HashMap<String, Object>) context.getBean("getFileObjectContentTestData"));
+
+        try {
+
+            temp = File.createTempFile("temp-file-name", ".tmp");
+
+            testObjects.put("contentRef", temp);
+
+            getObjectContentVerifications(testObjects);
+
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+        } finally {
+            if (temp != null) {
+                temp.delete();
+            }
+        }
+
+    }
+
+    @Category({SmokeTests.class, RegressionTests.class})
+    @Test
+    public void testGetStringObjectContent() {
+
+        testObjects.putAll((HashMap<String, Object>) context.getBean("getStringObjectContentTestData"));
+
+        getObjectContentVerifications(testObjects);
+
+    }
 
     @Category({RegressionTests.class})
- 	@Test
- 	public void testGetFileObjectContentOptionalAttributes() {
+    @Test
+    public void testGetByteArrayObjectContentOptionalAttributes() {
 
- 	    File temp = null;
- 		   
- 		testObjects.putAll((HashMap<String,Object>) context.getBean("getFileObjectContentTestData"));
- 		HashMap<String,Object> updatedUserMetadata = (HashMap<String,Object>) context.getBean("getFileObjectContentUpdatedUserMetadata");
- 		
- 		try {
- 			
- 			temp = File.createTempFile("temp-file-name", ".tmp"); 
- 			
- 	    	testObjects.put("contentRef", temp);
+        testObjects.putAll((HashMap<String, Object>) context.getBean("getByteArrayObjectContentTestData"));
+        HashMap<String, Object> updatedUserMetadata = (HashMap<String, Object>) context.getBean("getByteArrayObjectContentUpdatedUserMetadata");
 
- 	    	getObjectContentOptionalAttributesVerifications(testObjects, updatedUserMetadata);
+        byte data[] = bucketName.getBytes();
+        testObjects.put("contentRef", data);
 
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		} finally {
-			if (temp != null) {	temp.delete(); }
-		}
-      
- 	}
+        getObjectContentOptionalAttributesVerifications(testObjects, updatedUserMetadata);
+
+    }
+
 
     @Category({RegressionTests.class})
- 	@Test
- 	public void testGetInputStreamObjectContentOptionalAttributes() {
-     
-    	InputStream inputStream = null;
- 		
- 		testObjects.putAll((HashMap<String,Object>) context.getBean("getInputStreamObjectContentTestData"));
- 		HashMap<String,Object> updatedUserMetadata = (HashMap<String,Object>) context.getBean("getInputStreamObjectContentUpdatedUserMetadata");
+    @Test
+    public void testGetFileObjectContentOptionalAttributes() {
 
-     	String host = testObjects.get("host").toString();
-     	String path = testObjects.get("path").toString();
-     	String urlString = String.format("http://%s/%s",host, path);
-     	
- 		try {
- 			
- 			URL url = new URL(urlString);
- 	    	URLConnection connection = url.openConnection();
- 	    	inputStream = connection.getInputStream();	    
- 	    	
- 	    	testObjects.put("contentRef", IOUtils.toByteArray(inputStream));
+        File temp = null;
 
- 	    	getObjectContentOptionalAttributesVerifications(testObjects, updatedUserMetadata);
- 	
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		} finally {
-			if (inputStream != null) try { inputStream.close(); } catch (IOException logOrIgnore) {}
-		}
-      
- 	}
- 
+        testObjects.putAll((HashMap<String, Object>) context.getBean("getFileObjectContentTestData"));
+        HashMap<String, Object> updatedUserMetadata = (HashMap<String, Object>) context.getBean("getFileObjectContentUpdatedUserMetadata");
+
+        try {
+
+            temp = File.createTempFile("temp-file-name", ".tmp");
+
+            testObjects.put("contentRef", temp);
+
+            getObjectContentOptionalAttributesVerifications(testObjects, updatedUserMetadata);
+
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+        } finally {
+            if (temp != null) {
+                temp.delete();
+            }
+        }
+
+    }
+
     @Category({RegressionTests.class})
-	@Test
-	public void testGetStringObjectContentOptionalAttributes() {
-  	
- 		testObjects.putAll((HashMap<String,Object>) context.getBean("getStringObjectContentTestData"));
- 		HashMap<String,Object> updatedUserMetadata = (HashMap<String,Object>) context.getBean("getStringObjectContentUpdatedUserMetadata");
-		
- 		getObjectContentOptionalAttributesVerifications(testObjects, updatedUserMetadata);
- 		
-	}
-    
+    @Test
+    public void testGetInputStreamObjectContentOptionalAttributes() {
+
+        InputStream inputStream = null;
+
+        testObjects.putAll((HashMap<String, Object>) context.getBean("getInputStreamObjectContentTestData"));
+        HashMap<String, Object> updatedUserMetadata = (HashMap<String, Object>) context.getBean("getInputStreamObjectContentUpdatedUserMetadata");
+
+        String host = testObjects.get("host").toString();
+        String path = testObjects.get("path").toString();
+        String urlString = String.format("http://%s/%s", host, path);
+
+        try {
+
+            URL url = new URL(urlString);
+            URLConnection connection = url.openConnection();
+            inputStream = connection.getInputStream();
+
+            testObjects.put("contentRef", IOUtils.toByteArray(inputStream));
+
+            getObjectContentOptionalAttributesVerifications(testObjects, updatedUserMetadata);
+
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+        } finally {
+            if (inputStream != null) try {
+                inputStream.close();
+            } catch (IOException logOrIgnore) {
+            }
+        }
+
+    }
+
+    @Category({RegressionTests.class})
+    @Test
+    public void testGetStringObjectContentOptionalAttributes() {
+
+        testObjects.putAll((HashMap<String, Object>) context.getBean("getStringObjectContentTestData"));
+        HashMap<String, Object> updatedUserMetadata = (HashMap<String, Object>) context.getBean("getStringObjectContentUpdatedUserMetadata");
+
+        getObjectContentOptionalAttributesVerifications(testObjects, updatedUserMetadata);
+
+    }
+
 }

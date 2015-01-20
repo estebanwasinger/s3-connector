@@ -8,9 +8,18 @@
 
 package org.mule.module.s3.automation.testcases;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.io.IOUtils;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.mule.api.MuleEvent;
+import org.mule.api.processor.MessageProcessor;
+import org.mule.module.s3.automation.RegressionTests;
+import org.mule.module.s3.automation.S3TestParent;
+import org.mule.module.s3.automation.SmokeTests;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,718 +31,738 @@ import java.security.MessageDigest;
 import java.util.HashMap;
 import java.util.UUID;
 
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.io.IOUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.mule.api.MuleEvent;
-import org.mule.api.processor.MessageProcessor;
+import static org.junit.Assert.*;
 
 public class CreateObjectTestCases extends S3TestParent {
-	
-	String bucketName;
-	
-	@Before
-	public void setUp(){
 
-		bucketName = UUID.randomUUID().toString();
-		
-		testObjects = new HashMap<String, Object>();
-		testObjects.put("bucketName", bucketName);
-    	
-		try {
+    String bucketName;
 
-			MessageProcessor flow = lookupMessageProcessor("create-bucket");
-			flow.process(getTestEvent(testObjects));
-	
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		}
-			
-	}
-	
-	@After
-	public void tearDown() {
-		
-		try {
-				
-			MessageProcessor flow = lookupMessageProcessor("delete-bucket-optional-attributes");
-			flow.process(getTestEvent(testObjects));
-			
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-				e.printStackTrace();
-				fail();
-		}
-		
-	}
-	
+    @Before
+    public void setUp() {
+
+        bucketName = UUID.randomUUID().toString();
+
+        testObjects = new HashMap<String, Object>();
+        testObjects.put("bucketName", bucketName);
+
+        try {
+
+            MessageProcessor flow = lookupMessageProcessor("create-bucket");
+            flow.process(getTestEvent(testObjects));
+
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+        }
+
+    }
+
+    @After
+    public void tearDown() {
+
+        try {
+
+            MessageProcessor flow = lookupMessageProcessor("delete-bucket-optional-attributes");
+            flow.process(getTestEvent(testObjects));
+
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+        }
+
+    }
+
     @Category({RegressionTests.class})
-	@Test
-	public void testCreateInputStreamObjectChildElementsNone() {
-    	
-    	InputStream inputStream = null;
-    	
-		testObjects.putAll((HashMap<String,Object>) context.getBean("createInputStreamObjectTestData"));
+    @Test
+    public void testCreateInputStreamObjectChildElementsNone() {
 
-    	String host = testObjects.get("host").toString();
-    	String path = testObjects.get("path").toString();
-    	String urlString = String.format("http://%s/%s",host, path);
-    	
-		try {
+        InputStream inputStream = null;
 
-	    	URL url = new URL(urlString);
-	    	URLConnection connection = url.openConnection();
-	    	inputStream = connection.getInputStream();	    
-	    	
-	    	testObjects.put("contentRef", inputStream);
+        testObjects.putAll((HashMap<String, Object>) context.getBean("createInputStreamObjectTestData"));
 
-			MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-none");
-			MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
+        String host = testObjects.get("host").toString();
+        String path = testObjects.get("path").toString();
+        String urlString = String.format("http://%s/%s", host, path);
 
-			assertEquals("{NullPayload}", response.getMessage().getPayload().toString());
-		
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		} finally {
-			if (inputStream != null) try { inputStream.close(); } catch (IOException logOrIgnore) {}
-		}
-     
-	}
-    
-    @Category({SmokeTests.class, SanityTests.class, RegressionTests.class})
-	@Test
-	public void testCreateInputStreamObjectChildElementsNoneVersioningEnabled() {
-    	
-    	InputStream inputStream = null;
-    	
-		testObjects.putAll((HashMap<String,Object>) context.getBean("createInputStreamObjectTestData"));
+        try {
 
-    	String host = testObjects.get("host").toString();
-    	String path = testObjects.get("path").toString();
-    	String urlString = String.format("http://%s/%s",host, path);
-    	
-		try {
+            URL url = new URL(urlString);
+            URLConnection connection = url.openConnection();
+            inputStream = connection.getInputStream();
 
-			testObjects.put("versioningStatus", "ENABLED");
-			
-			MessageProcessor setBucketVersioningStatusFlow = lookupMessageProcessor("set-bucket-versioning-status");
-			setBucketVersioningStatusFlow.process(getTestEvent(testObjects));
-			
-	    	URL url = new URL(urlString);
-	    	URLConnection connection = url.openConnection();
-	    	inputStream = connection.getInputStream();	    
-	    	
-	    	testObjects.put("contentRef", inputStream);
+            testObjects.put("contentRef", inputStream);
 
-			MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-none");
-			MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
-			
-			assertFalse(response.getMessage().getPayload().toString().equals("{NullPayload}"));
-		
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		} finally {
-			if (inputStream != null) try { inputStream.close(); } catch (IOException logOrIgnore) {}
-		}
-     
-	}
-    
-    @Category({SmokeTests.class, SanityTests.class, RegressionTests.class})
- 	@Test
- 	public void testCreateInputStreamObjectChildElementsFromMessageVersioningEnabled() {
-     	
-		InputStream inputStream = null;
-    	
-		testObjects.putAll((HashMap<String,Object>) context.getBean("createInputStreamObjectTestData"));
+            MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-none");
+            MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
 
-     	String host = testObjects.get("host").toString();
-     	String path = testObjects.get("path").toString();
-     	String urlString = String.format("http://%s/%s",host, path);
-     	
- 		try {
- 			
- 			testObjects.put("versioningStatus", "ENABLED");
- 			
- 			MessageProcessor setBucketVersioningStatusFlow = lookupMessageProcessor("set-bucket-versioning-status");
- 			setBucketVersioningStatusFlow.process(getTestEvent(testObjects));
- 			
- 	    	URL url = new URL(urlString);
- 	    	URLConnection connection = url.openConnection();
- 	    	inputStream = connection.getInputStream();	    
- 	    	
- 	    	testObjects.put("contentRef", inputStream);
+            assertEquals("{NullPayload}", response.getMessage().getPayload().toString());
 
- 			MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-from-message");
- 			MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
- 			
- 			assertFalse(response.getMessage().getPayload().toString().equals("{NullPayload}"));
- 		
- 		} catch (Exception e) {
- 			// TODO Auto-generated catch block
- 			e.printStackTrace();
- 			fail();
- 		} finally {
- 			if (inputStream != null) try { inputStream.close(); } catch (IOException logOrIgnore) {}
- 		}
-      
- 	}
-    
-    @Category({SmokeTests.class, SanityTests.class, RegressionTests.class})
-	@Test
-	public void testCreateInputStreamObjectChildElementsFromMessage() {
-    	
-		InputStream inputStream = null;
-    	
-		testObjects.putAll((HashMap<String,Object>) context.getBean("createInputStreamObjectTestData"));
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+        } finally {
+            if (inputStream != null) try {
+                inputStream.close();
+            } catch (IOException logOrIgnore) {
+            }
+        }
 
-    	String host = testObjects.get("host").toString();
-    	String path = testObjects.get("path").toString();
-    	String urlString = String.format("http://%s/%s",host, path);
-    	
-		try {
-			
-	    	URL url = new URL(urlString);
-	    	URLConnection connection = url.openConnection();
-	    	inputStream = connection.getInputStream();	    
-	    	
-	    	testObjects.put("contentRef", inputStream);
+    }
 
-			MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-from-message");
-			MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
+    @Category({SmokeTests.class, RegressionTests.class})
+    @Test
+    public void testCreateInputStreamObjectChildElementsNoneVersioningEnabled() {
 
-			assertEquals("{NullPayload}", response.getMessage().getPayload().toString());
-			
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		} finally {
-			if (inputStream != null) try { inputStream.close(); } catch (IOException logOrIgnore) {}
-		}
-     
-	}
-    
+        InputStream inputStream = null;
+
+        testObjects.putAll((HashMap<String, Object>) context.getBean("createInputStreamObjectTestData"));
+
+        String host = testObjects.get("host").toString();
+        String path = testObjects.get("path").toString();
+        String urlString = String.format("http://%s/%s", host, path);
+
+        try {
+
+            testObjects.put("versioningStatus", "ENABLED");
+
+            MessageProcessor setBucketVersioningStatusFlow = lookupMessageProcessor("set-bucket-versioning-status");
+            setBucketVersioningStatusFlow.process(getTestEvent(testObjects));
+
+            URL url = new URL(urlString);
+            URLConnection connection = url.openConnection();
+            inputStream = connection.getInputStream();
+
+            testObjects.put("contentRef", inputStream);
+
+            MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-none");
+            MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
+
+            assertFalse(response.getMessage().getPayload().toString().equals("{NullPayload}"));
+
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+        } finally {
+            if (inputStream != null) try {
+                inputStream.close();
+            } catch (IOException logOrIgnore) {
+            }
+        }
+
+    }
+
+    @Category({SmokeTests.class, RegressionTests.class})
+    @Test
+    public void testCreateInputStreamObjectChildElementsFromMessageVersioningEnabled() {
+
+        InputStream inputStream = null;
+
+        testObjects.putAll((HashMap<String, Object>) context.getBean("createInputStreamObjectTestData"));
+
+        String host = testObjects.get("host").toString();
+        String path = testObjects.get("path").toString();
+        String urlString = String.format("http://%s/%s", host, path);
+
+        try {
+
+            testObjects.put("versioningStatus", "ENABLED");
+
+            MessageProcessor setBucketVersioningStatusFlow = lookupMessageProcessor("set-bucket-versioning-status");
+            setBucketVersioningStatusFlow.process(getTestEvent(testObjects));
+
+            URL url = new URL(urlString);
+            URLConnection connection = url.openConnection();
+            inputStream = connection.getInputStream();
+
+            testObjects.put("contentRef", inputStream);
+
+            MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-from-message");
+            MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
+
+            assertFalse(response.getMessage().getPayload().toString().equals("{NullPayload}"));
+
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+        } finally {
+            if (inputStream != null) try {
+                inputStream.close();
+            } catch (IOException logOrIgnore) {
+            }
+        }
+
+    }
+
+    @Category({SmokeTests.class, RegressionTests.class})
+    @Test
+    public void testCreateInputStreamObjectChildElementsFromMessage() {
+
+        InputStream inputStream = null;
+
+        testObjects.putAll((HashMap<String, Object>) context.getBean("createInputStreamObjectTestData"));
+
+        String host = testObjects.get("host").toString();
+        String path = testObjects.get("path").toString();
+        String urlString = String.format("http://%s/%s", host, path);
+
+        try {
+
+            URL url = new URL(urlString);
+            URLConnection connection = url.openConnection();
+            inputStream = connection.getInputStream();
+
+            testObjects.put("contentRef", inputStream);
+
+            MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-from-message");
+            MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
+
+            assertEquals("{NullPayload}", response.getMessage().getPayload().toString());
+
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+        } finally {
+            if (inputStream != null) try {
+                inputStream.close();
+            } catch (IOException logOrIgnore) {
+            }
+        }
+
+    }
+
     @Category({RegressionTests.class})
-	@Test
-	public void testCreateInputStreamObjectChildElementsCreateObjectManually() {
-    	
-		InputStream inputStream = null;
-    	
-		testObjects.putAll((HashMap<String,Object>) context.getBean("createInputStreamObjectTestData"));
+    @Test
+    public void testCreateInputStreamObjectChildElementsCreateObjectManually() {
 
-    	String host = testObjects.get("host").toString();
-    	String path = testObjects.get("path").toString();
-    	String urlString = String.format("http://%s/%s",host, path);
-    	
-		try {
-			
-	    	URL url = new URL(urlString);
-	    	URLConnection connection = url.openConnection();
-	    	inputStream = connection.getInputStream();	    
-	    	
-	    	testObjects.put("contentRef", inputStream);
+        InputStream inputStream = null;
 
-			MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-create-object-manually");
-			MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
+        testObjects.putAll((HashMap<String, Object>) context.getBean("createInputStreamObjectTestData"));
 
-			assertEquals("{NullPayload}", response.getMessage().getPayload().toString());
-			
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		} finally {
-			if (inputStream != null) try { inputStream.close(); } catch (IOException logOrIgnore) {}
-		}
+        String host = testObjects.get("host").toString();
+        String path = testObjects.get("path").toString();
+        String urlString = String.format("http://%s/%s", host, path);
 
-     
-	}
-    
+        try {
+
+            URL url = new URL(urlString);
+            URLConnection connection = url.openConnection();
+            inputStream = connection.getInputStream();
+
+            testObjects.put("contentRef", inputStream);
+
+            MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-create-object-manually");
+            MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
+
+            assertEquals("{NullPayload}", response.getMessage().getPayload().toString());
+
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+        } finally {
+            if (inputStream != null) try {
+                inputStream.close();
+            } catch (IOException logOrIgnore) {
+            }
+        }
+
+
+    }
+
     @Category({RegressionTests.class})
-	@Test
-	public void testCreateByteArrayObjectChildElementsNone() {
-    	
-		testObjects.putAll((HashMap<String,Object>) context.getBean("createByteArrayObjectTestData"));
+    @Test
+    public void testCreateByteArrayObjectChildElementsNone() {
 
-    	byte data[] = bucketName.getBytes();
-    	testObjects.put("contentRef", data);
-    	
-		try {
-			
-			MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-none");
-			MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
+        testObjects.putAll((HashMap<String, Object>) context.getBean("createByteArrayObjectTestData"));
 
-			assertEquals("{NullPayload}", response.getMessage().getPayload().toString());
-		
-			
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		}
-     
-	}
-    
+        byte data[] = bucketName.getBytes();
+        testObjects.put("contentRef", data);
+
+        try {
+
+            MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-none");
+            MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
+
+            assertEquals("{NullPayload}", response.getMessage().getPayload().toString());
+
+
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+        }
+
+    }
+
     @Category({RegressionTests.class})
-	@Test
-	public void testCreateStringObjectChildElementsNone() {
-    	
-		testObjects.putAll((HashMap<String,Object>) context.getBean("createStringObjectTestData"));
-		
-		try {
-			
-			MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-none");
-			MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
+    @Test
+    public void testCreateStringObjectChildElementsNone() {
 
-			assertEquals("{NullPayload}", response.getMessage().getPayload().toString());
-		
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		}
-     
-	}
-    
-    @Category({SmokeTests.class, SanityTests.class, RegressionTests.class})
-	@Test
-	public void testCreateStringObjectChildElementsFromMessage() {
-    	
-		testObjects.putAll((HashMap<String,Object>) context.getBean("createStringObjectTestData"));
-		
-		try {
-			
-			MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-from-message");
-			MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
+        testObjects.putAll((HashMap<String, Object>) context.getBean("createStringObjectTestData"));
 
-			assertEquals("{NullPayload}", response.getMessage().getPayload().toString());
-		
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		}
-     
-	}
-    
+        try {
+
+            MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-none");
+            MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
+
+            assertEquals("{NullPayload}", response.getMessage().getPayload().toString());
+
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+        }
+
+    }
+
+    @Category({SmokeTests.class, RegressionTests.class})
+    @Test
+    public void testCreateStringObjectChildElementsFromMessage() {
+
+        testObjects.putAll((HashMap<String, Object>) context.getBean("createStringObjectTestData"));
+
+        try {
+
+            MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-from-message");
+            MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
+
+            assertEquals("{NullPayload}", response.getMessage().getPayload().toString());
+
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+        }
+
+    }
+
     @Category({RegressionTests.class})
-	@Test
-	public void testCreateStringObjectChildElementsCreateObjectManually() {
-    	
-		testObjects.putAll((HashMap<String,Object>) context.getBean("createStringObjectTestData"));
-		
-		try {
-			
-			MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-create-object-manually");
-			MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
+    @Test
+    public void testCreateStringObjectChildElementsCreateObjectManually() {
 
-			assertEquals("{NullPayload}", response.getMessage().getPayload().toString());
-		
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		}
-     
-	}
-    
+        testObjects.putAll((HashMap<String, Object>) context.getBean("createStringObjectTestData"));
+
+        try {
+
+            MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-create-object-manually");
+            MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
+
+            assertEquals("{NullPayload}", response.getMessage().getPayload().toString());
+
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+        }
+
+    }
+
     @Category({RegressionTests.class})
-	@Test
-	public void testCreateStringObjectChildElementsNoneVersioningEnabled() {
-    	
-		testObjects.putAll((HashMap<String,Object>) context.getBean("createStringObjectTestData"));
-    	
-		try {
+    @Test
+    public void testCreateStringObjectChildElementsNoneVersioningEnabled() {
 
-			testObjects.put("versioningStatus", "ENABLED");
-			
-			MessageProcessor setBucketVersioningStatusFlow = lookupMessageProcessor("set-bucket-versioning-status");
-			setBucketVersioningStatusFlow.process(getTestEvent(testObjects)); 
+        testObjects.putAll((HashMap<String, Object>) context.getBean("createStringObjectTestData"));
 
-			MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-none");
-			MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
-			
-			assertFalse(response.getMessage().getPayload().toString().equals("{NullPayload}"));
-		
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		}
-     
-	}
-    
-    @Category({SmokeTests.class, SanityTests.class, RegressionTests.class})
-	@Test    
-	public void testCreateStringObjectChildElementsFromMessageVersioningEnabled() {
-    	
-		testObjects.putAll((HashMap<String,Object>) context.getBean("createStringObjectTestData"));
-    	
-		try {
+        try {
 
-			testObjects.put("versioningStatus", "ENABLED");
-			
-			MessageProcessor setBucketVersioningStatusFlow = lookupMessageProcessor("set-bucket-versioning-status");
-			setBucketVersioningStatusFlow.process(getTestEvent(testObjects)); 
+            testObjects.put("versioningStatus", "ENABLED");
 
-			MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-from-message");
-			MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
-			
-			assertFalse(response.getMessage().getPayload().toString().equals("{NullPayload}"));
-		
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		}
-     
-	}
-      
-    @Category({SmokeTests.class, SanityTests.class, RegressionTests.class})
-	@Test
-	public void testCreateByteArrayObjectChildElementsFromMessage() {
-    	
-		testObjects.putAll((HashMap<String,Object>) context.getBean("createByteArrayObjectTestData"));
+            MessageProcessor setBucketVersioningStatusFlow = lookupMessageProcessor("set-bucket-versioning-status");
+            setBucketVersioningStatusFlow.process(getTestEvent(testObjects));
 
-    	byte data[] = bucketName.getBytes();
-    	testObjects.put("contentRef", data);
-    	
-		try {
+            MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-none");
+            MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
 
-			MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-from-message");
-			MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
+            assertFalse(response.getMessage().getPayload().toString().equals("{NullPayload}"));
 
-			assertEquals("{NullPayload}", response.getMessage().getPayload().toString());
-		
-			
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		}
-     
-	}
-    
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+        }
+
+    }
+
+    @Category({SmokeTests.class, RegressionTests.class})
+    @Test
+    public void testCreateStringObjectChildElementsFromMessageVersioningEnabled() {
+
+        testObjects.putAll((HashMap<String, Object>) context.getBean("createStringObjectTestData"));
+
+        try {
+
+            testObjects.put("versioningStatus", "ENABLED");
+
+            MessageProcessor setBucketVersioningStatusFlow = lookupMessageProcessor("set-bucket-versioning-status");
+            setBucketVersioningStatusFlow.process(getTestEvent(testObjects));
+
+            MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-from-message");
+            MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
+
+            assertFalse(response.getMessage().getPayload().toString().equals("{NullPayload}"));
+
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+        }
+
+    }
+
+    @Category({SmokeTests.class, RegressionTests.class})
+    @Test
+    public void testCreateByteArrayObjectChildElementsFromMessage() {
+
+        testObjects.putAll((HashMap<String, Object>) context.getBean("createByteArrayObjectTestData"));
+
+        byte data[] = bucketName.getBytes();
+        testObjects.put("contentRef", data);
+
+        try {
+
+            MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-from-message");
+            MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
+
+            assertEquals("{NullPayload}", response.getMessage().getPayload().toString());
+
+
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+        }
+
+    }
+
     @Category({RegressionTests.class})
-	@Test
-	public void testCreateByteArrayObjectChildElementsNoneVersioningEnabled() {
-    	
-		testObjects.putAll((HashMap<String,Object>) context.getBean("createByteArrayObjectTestData"));
+    @Test
+    public void testCreateByteArrayObjectChildElementsNoneVersioningEnabled() {
 
-    	byte data[] = bucketName.getBytes();
-    	testObjects.put("contentRef", data);
-    	
-		try {
+        testObjects.putAll((HashMap<String, Object>) context.getBean("createByteArrayObjectTestData"));
 
-			testObjects.put("versioningStatus", "ENABLED");
-			
-			MessageProcessor setBucketVersioningStatusFlow = lookupMessageProcessor("set-bucket-versioning-status");
-			setBucketVersioningStatusFlow.process(getTestEvent(testObjects)); 
+        byte data[] = bucketName.getBytes();
+        testObjects.put("contentRef", data);
 
-			MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-none");
-			MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
-			
-			assertFalse(response.getMessage().getPayload().toString().equals("{NullPayload}"));
-		
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		}
-     
-	}
-    
-    @Category({SmokeTests.class, SanityTests.class, RegressionTests.class})
-	@Test    
-	public void testCreateByteArrayObjectChildElementsFromMessageVersioningEnabled() {
-    	
-		testObjects.putAll((HashMap<String,Object>) context.getBean("createByteArrayObjectTestData"));
+        try {
 
-    	byte data[] = bucketName.getBytes();
-    	testObjects.put("contentRef", data);
-    	
-		try {
+            testObjects.put("versioningStatus", "ENABLED");
 
-			testObjects.put("versioningStatus", "ENABLED");
-			
-			MessageProcessor setBucketVersioningStatusFlow = lookupMessageProcessor("set-bucket-versioning-status");
-			setBucketVersioningStatusFlow.process(getTestEvent(testObjects)); 
+            MessageProcessor setBucketVersioningStatusFlow = lookupMessageProcessor("set-bucket-versioning-status");
+            setBucketVersioningStatusFlow.process(getTestEvent(testObjects));
 
-			MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-from-message");
-			MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
-			
-			assertFalse(response.getMessage().getPayload().toString().equals("{NullPayload}"));
-		
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		}
-     
-	}
-    
+            MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-none");
+            MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
+
+            assertFalse(response.getMessage().getPayload().toString().equals("{NullPayload}"));
+
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+        }
+
+    }
+
+    @Category({SmokeTests.class, RegressionTests.class})
+    @Test
+    public void testCreateByteArrayObjectChildElementsFromMessageVersioningEnabled() {
+
+        testObjects.putAll((HashMap<String, Object>) context.getBean("createByteArrayObjectTestData"));
+
+        byte data[] = bucketName.getBytes();
+        testObjects.put("contentRef", data);
+
+        try {
+
+            testObjects.put("versioningStatus", "ENABLED");
+
+            MessageProcessor setBucketVersioningStatusFlow = lookupMessageProcessor("set-bucket-versioning-status");
+            setBucketVersioningStatusFlow.process(getTestEvent(testObjects));
+
+            MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-from-message");
+            MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
+
+            assertFalse(response.getMessage().getPayload().toString().equals("{NullPayload}"));
+
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+        }
+
+    }
+
     @Category({RegressionTests.class})
-	@Test
-	public void testCreateByteArrayObjectChildElementsCreateObjectsManually() {
-    	
-		testObjects.putAll((HashMap<String,Object>) context.getBean("createByteArrayObjectTestData"));
+    @Test
+    public void testCreateByteArrayObjectChildElementsCreateObjectsManually() {
 
-    	byte data[] = bucketName.getBytes();
-    	testObjects.put("contentRef", data);
-    	
-		try {
+        testObjects.putAll((HashMap<String, Object>) context.getBean("createByteArrayObjectTestData"));
 
-			MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-create-object-manually");
-			MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
+        byte data[] = bucketName.getBytes();
+        testObjects.put("contentRef", data);
 
-			assertEquals("{NullPayload}", response.getMessage().getPayload().toString());
-		
-			
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		}
-     
-	}
-    
+        try {
+
+            MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-create-object-manually");
+            MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
+
+            assertEquals("{NullPayload}", response.getMessage().getPayload().toString());
+
+
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+        }
+
+    }
+
     @Category({RegressionTests.class})
-	@Test
-	public void testCreateFileObjectChildElementsNone() {
-    	
-    	File temp = null;
-    	
-		testObjects.putAll((HashMap<String,Object>) context.getBean("createFileObjectTestData"));
-		
-		try {
-			
-			temp = File.createTempFile("temp-file-name", ".tmp"); 
-			
-	    	testObjects.put("contentRef", temp);
-			
-			MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-none");
-			MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
+    @Test
+    public void testCreateFileObjectChildElementsNone() {
 
-			assertEquals("{NullPayload}", response.getMessage().getPayload().toString());
-		
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		} finally {
-			if (temp != null) {	temp.delete(); }
-		}
-     
-	}
-    
-    @Category({SmokeTests.class, SanityTests.class, RegressionTests.class})
-	@Test
-	public void testCreateFileObjectChildElementsNoneVersioningEnabled() {
-    	
-    	File temp = null;
-    	
-		testObjects.putAll((HashMap<String,Object>) context.getBean("createFileObjectTestData"));
-    	
-		try {
-			
-			temp = File.createTempFile("temp-file-name", ".tmp"); 
-			
-	    	testObjects.put("contentRef", temp);
+        File temp = null;
 
-			testObjects.put("versioningStatus", "ENABLED");
-			
-			MessageProcessor setBucketVersioningStatusFlow = lookupMessageProcessor("set-bucket-versioning-status");
-			setBucketVersioningStatusFlow.process(getTestEvent(testObjects)); 
+        testObjects.putAll((HashMap<String, Object>) context.getBean("createFileObjectTestData"));
 
-			MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-none");
-			MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
-			
-			assertFalse(response.getMessage().getPayload().toString().equals("{NullPayload}"));
-		
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		} finally {
-			if (temp != null) {	temp.delete(); }
-		}
-     
-	}
-    
-    @Category({SmokeTests.class, SanityTests.class, RegressionTests.class})
-	@Test
-	public void testCreateFileObjectChildElementsFromMessage() {
-    	
-    	File temp = null;
-    	
-		testObjects.putAll((HashMap<String,Object>) context.getBean("createFileObjectTestData"));
-    	
-		try {
-			
-			temp = File.createTempFile("temp-file-name", ".tmp"); 
-			
-	    	testObjects.put("contentRef", temp);
-			
-			MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-from-message");
-			MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
+        try {
 
-			assertEquals("{NullPayload}", response.getMessage().getPayload().toString());
-		
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		} finally {
-			if (temp != null) {	temp.delete(); }
-		}
-     
-	}
-    
+            temp = File.createTempFile("temp-file-name", ".tmp");
+
+            testObjects.put("contentRef", temp);
+
+            MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-none");
+            MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
+
+            assertEquals("{NullPayload}", response.getMessage().getPayload().toString());
+
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+        } finally {
+            if (temp != null) {
+                temp.delete();
+            }
+        }
+
+    }
+
+    @Category({SmokeTests.class, RegressionTests.class})
+    @Test
+    public void testCreateFileObjectChildElementsNoneVersioningEnabled() {
+
+        File temp = null;
+
+        testObjects.putAll((HashMap<String, Object>) context.getBean("createFileObjectTestData"));
+
+        try {
+
+            temp = File.createTempFile("temp-file-name", ".tmp");
+
+            testObjects.put("contentRef", temp);
+
+            testObjects.put("versioningStatus", "ENABLED");
+
+            MessageProcessor setBucketVersioningStatusFlow = lookupMessageProcessor("set-bucket-versioning-status");
+            setBucketVersioningStatusFlow.process(getTestEvent(testObjects));
+
+            MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-none");
+            MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
+
+            assertFalse(response.getMessage().getPayload().toString().equals("{NullPayload}"));
+
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+        } finally {
+            if (temp != null) {
+                temp.delete();
+            }
+        }
+
+    }
+
+    @Category({SmokeTests.class, RegressionTests.class})
+    @Test
+    public void testCreateFileObjectChildElementsFromMessage() {
+
+        File temp = null;
+
+        testObjects.putAll((HashMap<String, Object>) context.getBean("createFileObjectTestData"));
+
+        try {
+
+            temp = File.createTempFile("temp-file-name", ".tmp");
+
+            testObjects.put("contentRef", temp);
+
+            MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-from-message");
+            MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
+
+            assertEquals("{NullPayload}", response.getMessage().getPayload().toString());
+
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+        } finally {
+            if (temp != null) {
+                temp.delete();
+            }
+        }
+
+    }
+
     @Category({RegressionTests.class})
-	@Test
-	public void testCreateFileObjectChildElementsCreateObjectManually() {
-    	
-    	File temp = null;
-    	
-		testObjects.putAll((HashMap<String,Object>) context.getBean("createFileObjectTestData"));
-    	
-		try {
-			
-			temp = File.createTempFile("temp-file-name", ".tmp"); 
-			
-	    	testObjects.put("contentRef", temp);
-			
-			MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-create-object-manually");
-			MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
+    @Test
+    public void testCreateFileObjectChildElementsCreateObjectManually() {
 
-			assertEquals("{NullPayload}", response.getMessage().getPayload().toString());
-		
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();	
-		} finally {
-			if (temp != null) {	temp.delete(); }
-		}
-     
-	}
-    
-    @Category({SmokeTests.class, SanityTests.class, RegressionTests.class})
-	@Test    
-	public void testCreateFileObjectChildElementsFromMessageVersioningEnabled() {
-    	
-    	File temp = null;
-    	
-		testObjects.putAll((HashMap<String,Object>) context.getBean("createFileObjectTestData"));
-    	
-		try {
-			
-			temp = File.createTempFile("temp-file-name", ".tmp"); 
-			
-	    	testObjects.put("contentRef", temp);
+        File temp = null;
 
-			testObjects.put("versioningStatus", "ENABLED");
-			
-			MessageProcessor setBucketVersioningStatusFlow = lookupMessageProcessor("set-bucket-versioning-status");
-			setBucketVersioningStatusFlow.process(getTestEvent(testObjects)); 
+        testObjects.putAll((HashMap<String, Object>) context.getBean("createFileObjectTestData"));
 
-			MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-from-message");
-			MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
-			
-			assertFalse(response.getMessage().getPayload().toString().equals("{NullPayload}"));
-		
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		} finally {
-			if (temp != null) {	temp.delete(); }
-		}
-     
-	}
-   
+        try {
+
+            temp = File.createTempFile("temp-file-name", ".tmp");
+
+            testObjects.put("contentRef", temp);
+
+            MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-create-object-manually");
+            MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
+
+            assertEquals("{NullPayload}", response.getMessage().getPayload().toString());
+
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+        } finally {
+            if (temp != null) {
+                temp.delete();
+            }
+        }
+
+    }
+
+    @Category({SmokeTests.class, RegressionTests.class})
+    @Test
+    public void testCreateFileObjectChildElementsFromMessageVersioningEnabled() {
+
+        File temp = null;
+
+        testObjects.putAll((HashMap<String, Object>) context.getBean("createFileObjectTestData"));
+
+        try {
+
+            temp = File.createTempFile("temp-file-name", ".tmp");
+
+            testObjects.put("contentRef", temp);
+
+            testObjects.put("versioningStatus", "ENABLED");
+
+            MessageProcessor setBucketVersioningStatusFlow = lookupMessageProcessor("set-bucket-versioning-status");
+            setBucketVersioningStatusFlow.process(getTestEvent(testObjects));
+
+            MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-from-message");
+            MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
+
+            assertFalse(response.getMessage().getPayload().toString().equals("{NullPayload}"));
+
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+        } finally {
+            if (temp != null) {
+                temp.delete();
+            }
+        }
+
+    }
+
     @Category({RegressionTests.class})
-	@Test
-	public void testCreateStringObjectOptionalAttributes() {
-    	
-		testObjects.putAll((HashMap<String,Object>) context.getBean("createStringObjectTestData"));
-		
-		String content = testObjects.get("contentRef").toString();
-		
-		try {
-			
-			MessageDigest messageDigest = MessageDigest.getInstance("MD5");
-			messageDigest.update(content.getBytes("UTF8"));   
-			byte[] encodedByteData = Base64.encodeBase64(messageDigest.digest());
-		    
-			testObjects.put("contentMd5", new String(encodedByteData, "UTF-8"));
-			testObjects.put("contentLength", Long.valueOf(content.getBytes("UTF-8").length));
-			
-			MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-optional-attributes");
-			MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
+    @Test
+    public void testCreateStringObjectOptionalAttributes() {
 
-			assertEquals("{NullPayload}", response.getMessage().getPayload().toString());
-		
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		}
-     
-	}
-    
+        testObjects.putAll((HashMap<String, Object>) context.getBean("createStringObjectTestData"));
+
+        String content = testObjects.get("contentRef").toString();
+
+        try {
+
+            MessageDigest messageDigest = MessageDigest.getInstance("MD5");
+            messageDigest.update(content.getBytes("UTF8"));
+            byte[] encodedByteData = Base64.encodeBase64(messageDigest.digest());
+
+            testObjects.put("contentMd5", new String(encodedByteData, "UTF-8"));
+            testObjects.put("contentLength", Long.valueOf(content.getBytes("UTF-8").length));
+
+            MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-optional-attributes");
+            MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
+
+            assertEquals("{NullPayload}", response.getMessage().getPayload().toString());
+
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+        }
+
+    }
+
     @Ignore
     @Category({RegressionTests.class})
-	@Test
-	public void testCreateInputStreamObjectOptionalAttributes() {
-    	
-    	InputStream inputStream = null;
-    	
-		testObjects.putAll((HashMap<String,Object>) context.getBean("createInputStreamObjectTestData"));
+    @Test
+    public void testCreateInputStreamObjectOptionalAttributes() {
 
-    	String host = testObjects.get("host").toString();
-    	String path = testObjects.get("path").toString();
-    	String urlString = String.format("http://%s/%s",host, path);
-    	
-		try {
+        InputStream inputStream = null;
 
-	    	URL url = new URL(urlString);
-	    	URLConnection connection = url.openConnection();
-	    	inputStream = connection.getInputStream();	    
-	    	
-	    	testObjects.put("contentRef", inputStream);
+        testObjects.putAll((HashMap<String, Object>) context.getBean("createInputStreamObjectTestData"));
 
-			MessageDigest messageDigest = MessageDigest.getInstance("MD5");
-	    	DigestInputStream digestInputStream = new DigestInputStream(inputStream, messageDigest);
+        String host = testObjects.get("host").toString();
+        String path = testObjects.get("path").toString();
+        String urlString = String.format("http://%s/%s", host, path);
 
-			byte[] encodedByteData = Base64.encodeBase64(digestInputStream.getMessageDigest().digest());
-    
-			testObjects.put("contentMd5", new String(encodedByteData, "UTF-8"));
-			testObjects.put("contentLength", Long.valueOf(IOUtils.toByteArray(inputStream).length));
+        try {
 
-			MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-optional-attributes");
-			MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
+            URL url = new URL(urlString);
+            URLConnection connection = url.openConnection();
+            inputStream = connection.getInputStream();
 
-			assertEquals("{NullPayload}", response.getMessage().getPayload().toString());
-				
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		} finally {			
-			if (inputStream != null) try { inputStream.close(); } catch (IOException logOrIgnore) {}
-		}
-     
-	}
-    
+            testObjects.put("contentRef", inputStream);
+
+            MessageDigest messageDigest = MessageDigest.getInstance("MD5");
+            DigestInputStream digestInputStream = new DigestInputStream(inputStream, messageDigest);
+
+            byte[] encodedByteData = Base64.encodeBase64(digestInputStream.getMessageDigest().digest());
+
+            testObjects.put("contentMd5", new String(encodedByteData, "UTF-8"));
+            testObjects.put("contentLength", Long.valueOf(IOUtils.toByteArray(inputStream).length));
+
+            MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-optional-attributes");
+            MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
+
+            assertEquals("{NullPayload}", response.getMessage().getPayload().toString());
+
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+        } finally {
+            if (inputStream != null) try {
+                inputStream.close();
+            } catch (IOException logOrIgnore) {
+            }
+        }
+
+    }
+
 }

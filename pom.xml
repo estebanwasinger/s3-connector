@@ -3,14 +3,14 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.mule.modules</groupId>
     <artifactId>mule-module-s3</artifactId>
-    <version>2.8.3-SNAPSHOT</version>
+    <version>3.0.0-SNAPSHOT</version>
     <packaging>mule-module</packaging>
-    <name>Mule S3 Connector</name>
+    <name>Mule Amazon S3 Connector</name>
 
     <parent>
         <groupId>org.mule.tools.devkit</groupId>
         <artifactId>mule-devkit-parent</artifactId>
-        <version>3.5.2-SNAPSHOT</version>
+        <version>3.6.0</version>
     </parent>
 
     <properties>
@@ -22,8 +22,8 @@
     <dependencies>
         <dependency>
             <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk</artifactId>
-            <version>1.7.13</version>
+            <artifactId>aws-java-sdk-s3</artifactId>
+            <version>1.9.14</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.codehaus.jackson</groupId>
@@ -36,16 +36,6 @@
             <artifactId>mule-module-scripting</artifactId>
             <version>${mule.version}</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>commons-httpclient</groupId>
-            <artifactId>commons-httpclient</artifactId>
-            <version>3.1</version>
-        </dependency>
-        <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <version>1.2.14</version>
         </dependency>
     </dependencies>
 
@@ -70,11 +60,8 @@
     </repositories>
 
     <scm>
-        <connection>scm:git:git://github.com:mulesoft/s3-connector.git
-        </connection>
-        <developerConnection>
-            scm:git:git@github.com:mulesoft/s3-connector.git
-        </developerConnection>
+        <connection>scm:git:git://github.com:mulesoft/s3-connector.git</connection>
+        <developerConnection>scm:git:git@github.com:mulesoft/s3-connector.git</developerConnection>
         <url>http://github.com/mulesoft/s3-connector</url>
     </scm>
 </project>

@@ -12,12 +12,12 @@ import java.io.File;
 
 public class TempFileS3ObjectContent extends FileS3ObjectContent {
 
-	public TempFileS3ObjectContent(File file) {
-		super(file);
-	}
+    public TempFileS3ObjectContent(File file) {
+        super(file);
+    }
 
-	public boolean delete() {
-		return this.file.delete();
-	}
+    public boolean delete() {
+        return this.file.delete();
+    }
 
 }

@@ -8,90 +8,91 @@
 
 package org.mule.module.s3.automation.testcases;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-
-import java.util.HashMap;
-import java.util.UUID;
-
+import com.amazonaws.services.s3.model.Bucket;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.mule.api.MuleEvent;
 import org.mule.api.processor.MessageProcessor;
+import org.mule.module.s3.automation.RegressionTests;
+import org.mule.module.s3.automation.S3TestParent;
+import org.mule.module.s3.automation.SmokeTests;
 
-import com.amazonaws.services.s3.model.Bucket;
+import java.util.HashMap;
+import java.util.UUID;
+
+import static org.junit.Assert.fail;
 
 public class CreateBucketTestCases extends S3TestParent {
-	
-	@Before
-	public void setUp(){
-		
-		testObjects = (HashMap<String,Object>) context.getBean("createBucketTestData");
-	
-	}
-	
-	@After
-	public void tearDown() {
-		
-		try {
-				
-			MessageProcessor flow = lookupMessageProcessor("delete-bucket");
-			MuleEvent response = flow.process(getTestEvent(testObjects));
-			
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-				e.printStackTrace();
-				fail();
-		}
-		
-	}
 
-    @Category({SmokeTests.class, SanityTests.class, RegressionTests.class})
-	@Test
-	public void testCreateBucket() {
-    	
-    	testObjects.put("bucketName", UUID.randomUUID().toString());
-    	
-		MessageProcessor flow = lookupMessageProcessor("create-bucket");
-    	
-		try {
+    @Before
+    public void setUp() {
 
-			MuleEvent response = flow.process(getTestEvent(testObjects));
-			Bucket bucket = (Bucket) response.getMessage().getPayload();
-			
-			assertEquals(testObjects.get("bucketName").toString(), bucket.getName());
-			
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		}
-     
-	}
-    
+        testObjects = (HashMap<String, Object>) context.getBean("createBucketTestData");
+
+    }
+
+    @After
+    public void tearDown() {
+
+        try {
+
+            MessageProcessor flow = lookupMessageProcessor("delete-bucket");
+            MuleEvent response = flow.process(getTestEvent(testObjects));
+
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+        }
+
+    }
+
+    @Category({SmokeTests.class, RegressionTests.class})
+    @Test
+    public void testCreateBucket() {
+
+        testObjects.put("bucketName", UUID.randomUUID().toString());
+
+        MessageProcessor flow = lookupMessageProcessor("create-bucket");
+
+        try {
+
+            MuleEvent response = flow.process(getTestEvent(testObjects));
+            Bucket bucket = (Bucket) response.getMessage().getPayload();
+
+            assertEquals(testObjects.get("bucketName").toString(), bucket.getName());
+
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+        }
+
+    }
+
     @Category({RegressionTests.class})
-	@Test
-	public void testCreateBucketOptionalAttributes() {
+    @Test
+    public void testCreateBucketOptionalAttributes() {
 
-    	testObjects.put("bucketName", UUID.randomUUID().toString());
-    	
-		MessageProcessor flow = lookupMessageProcessor("create-bucket");
-    	
-		try {
+        testObjects.put("bucketName", UUID.randomUUID().toString());
 
-			MuleEvent response = flow.process(getTestEvent(testObjects));
-			Bucket bucket = (Bucket) response.getMessage().getPayload();
-			
-			assertEquals(testObjects.get("bucketName").toString(), bucket.getName());
-			
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		}
-     
-	}
-    
+        MessageProcessor flow = lookupMessageProcessor("create-bucket");
+
+        try {
+
+            MuleEvent response = flow.process(getTestEvent(testObjects));
+            Bucket bucket = (Bucket) response.getMessage().getPayload();
+
+            assertEquals(testObjects.get("bucketName").toString(), bucket.getName());
+
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            fail();
+        }
+
+    }
+
 }

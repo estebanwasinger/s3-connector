@@ -11,14 +11,11 @@ package org.mule.module.s3.util;
 /**
  * Hub for some misc class methods
  */
-public final class InternalUtils
-{
-    private InternalUtils()
-    {
+public final class InternalUtils {
+    private InternalUtils() {
     }
 
-    public static <T> T coalesce(T o0, T o1)
-    {
+    public static <T> T coalesce(T o0, T o1) {
         return o0 != null ? o0 : o1;
     }
 }

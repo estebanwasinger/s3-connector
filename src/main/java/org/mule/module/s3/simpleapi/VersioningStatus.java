@@ -13,20 +13,17 @@ import com.amazonaws.services.s3.model.BucketVersioningConfiguration;
 /**
  * The posible versioning status.
  */
-public enum VersioningStatus
-{
+public enum VersioningStatus {
     OFF(BucketVersioningConfiguration.OFF), ENABLED(BucketVersioningConfiguration.ENABLED), SUSPENDED(
-                    BucketVersioningConfiguration.SUSPENDED);
+            BucketVersioningConfiguration.SUSPENDED);
 
     private String versioningStatusString;
 
-    private VersioningStatus(String s3Equivalent)
-    {
+    private VersioningStatus(String s3Equivalent) {
         this.versioningStatusString = s3Equivalent;
     }
 
-    public String toString()
-    {
+    public String toString() {
         return versioningStatusString;
     }
 
