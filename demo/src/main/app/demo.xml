@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:batch="http://www.mulesoft.org/schema/mule/batch" xmlns:twitter="http://www.mulesoft.org/schema/mule/twitter" xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:s3="http://www.mulesoft.org/schema/mule/s3" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" version="EE-3.6.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/s3 http://www.mulesoft.org/schema/mule/s3/current/mule-s3.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/twitter http://www.mulesoft.org/schema/mule/twitter/current/mule-twitter.xsd">
+    <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
+    <s3:config name="Amazon_S3_Configuration" accessKey="${s3.accessKey}" secretKey="${s3.secretKey}" doc:name="Amazon S3: Configuration"/>
+    <http:request-config name="HTTP_Request_Configuration" host="mulesoft.org" port="80"  doc:name="HTTP Request Configuration"/>
+    <twitter:config name="Twitter__Configuration" accessKey="${twitter.access.key}" accessSecret="${twitter.access.secret}" consumerKey="${twitter.consumer.key}" consumerSecret="${twitter.consumer.secret}" doc:name="Twitter: Configuration"/>
+    <sub-flow name="Create_Object_Sub_Flow">
+        <s3:create-bucket config-ref="Amazon_S3_Configuration" bucketName="${s3.bucketName}" doc:name="Create S3 Bucket"/>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <logger message="### create-bucket #[payload]" level="INFO" doc:name="Display S3 Bucket Status"/>
+        <http:request config-ref="HTTP_Request_Configuration" path="sites/all/themes/mulesoft_community/logo.png" method="GET" doc:name="Get MuleSoft logo"/>
+        <s3:create-object config-ref="Amazon_S3_Configuration" bucketName="${s3.bucketName}" key="logo2.jpg" doc:name="Create Object"/>
+    </sub-flow>
+    <flow name="Amazon_S3_Twitter_Integration_Flow">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/publish" doc:name="HTTP"/>
+        <scripting:component doc:name="Return New Image Name">
+            <scripting:script engine="Groovy"><![CDATA[import java.text.SimpleDateFormat;
+return "image-" + new SimpleDateFormat("yyyy-MM-dd-HH-mm").format(new Date()) + ".jpg";
+	            ]]></scripting:script>
+        </scripting:component>
+        <message-properties-transformer doc:name="Set Message Property for the Name" scope="session">
+            <add-message-property key="newImage" value="#[payload]"/>
+        </message-properties-transformer>
+        <logger message="#[header:session:newImage]" level="INFO" doc:name="Display session variable"/>
+        <set-variable variableName="randomBucket" value="mule-demo-bucket" doc:name="Set new bucket variable"/>
+        <s3:create-bucket config-ref="Amazon_S3_Configuration" bucketName="#[flowVars.randomBucket]" doc:name="Create Random Bucket"/>
+        <flow-ref name="Create_Object_Sub_Flow" doc:name="Calling Create Object Sub Flow"/>
+        <s3:copy-object config-ref="Amazon_S3_Configuration" destinationKey="#[header:session:newImage]" sourceBucketName="${s3.bucketName}" sourceKey="logo2.jpg" doc:name="Copy Image" destinationBucketName="#[flowVars.randomBucket]" destinationAcl="PUBLIC_READ"/>
+        <s3:create-object-uri config-ref="Amazon_S3_Configuration" bucketName="#[flowVars.randomBucket]" key="#[header:session:newImage]" useDefaultServer="true" doc:name="Create Image URL"/>
+        <scripting:component doc:name="Prepare tweet message">
+            <scripting:script engine="Groovy"><![CDATA[import org.apache.commons.lang.StringUtils;
+return StringUtils.abbreviate("Hey, new image: " + message.payload, 140);]]></scripting:script>
+        </scripting:component>
+        <logger level="INFO" doc:name="Display Image URL" message="Image URL : #[payload]"/>
+        <twitter:update-status config-ref="Twitter__Configuration" status="#[payload]" doc:name="Update status with the message"/>
+        <s3:delete-bucket config-ref="Amazon_S3_Configuration" bucketName="#[flowVars.randomBucket]" force="true" doc:name="Delete Random Bucket"/>
+        <s3:delete-bucket config-ref="Amazon_S3_Configuration" bucketName="${s3.bucketName}" force="true" doc:name="Delete S3 Bucket"/>
+        <set-payload value="### Demo Completed, Check logs and Twitter tweets !!!" doc:name="Set Payload"/>
+        
+    </flow>
+</mule>

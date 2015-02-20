@@ -1,15 +1,22 @@
 /**
- * Copyright (c) MuleSoft, Inc. All rights reserved. http://www.mulesoft.com
- *
- * The software in this package is published under the terms of the CPAL v1.0
- * license, a copy of which has been included with this distribution in the
- * LICENSE.md file.
+ * (c) 2003-2015 MuleSoft, Inc. The software in this package is
+ * published under the terms of the CPAL v1.0 license, a copy of which
+ * has been included with this distribution in the LICENSE.md file.
  */
 
 package org.mule.module.s3.automation.testcases;
 
-import static org.junit.Assert.*;
-import static org.junit.Assert.fail;
+import com.amazonaws.services.s3.model.Bucket;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import org.apache.commons.io.IOUtils;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.mule.module.s3.automation.RegressionTests;
+import org.mule.module.s3.automation.S3TestParent;
+import org.mule.module.s3.automation.SmokeTests;
+import org.mule.modules.tests.ConnectorTestUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,288 +24,230 @@ import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.mule.api.MuleEvent;
-import org.mule.api.processor.MessageProcessor;
-
-import com.amazonaws.services.s3.model.ObjectMetadata;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class GetObjectMetadataTestCases extends S3TestParent {
-	
-	String bucketName;
-	
-	private void getObjectMetadataVerifications(Map<String, Object> testObjects) {
-		
-		try {
-			
-			MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-from-message");
-			createObjectFlow.process(getTestEvent(testObjects));
 
-			MessageProcessor getObjectFlow = lookupMessageProcessor("get-object-metadata");
-			MuleEvent response = getObjectFlow.process(getTestEvent(testObjects));
-			
-			ObjectMetadata objectMetadata = (ObjectMetadata) response.getMessage().getPayload();
+    String bucketName;
 
-			assertTrue(objectMetadata.getUserMetadata().equals(testObjects.get("userMetadata")));
+    @Before
+    public void setUp() throws Exception {
+        initializeTestRunMessage("createBucketTestData");
+        bucketName = ((Bucket) runFlowAndGetPayload("create-bucket")).getName();
+    }
 
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		}
-		
-	}
-	
-	private void getObjectMetadataOptionalAttributesVerifications(Map<String, Object> testObjects, HashMap<String,Object> updatedUserMetadata){
-		
- 		MessageProcessor getObjectOptionalAttributesFlow;
- 		MuleEvent getObjectOptionalAttributesResponse;
-		
-		testObjects.put("versioningStatus", "ENABLED");
-		
-		try {
-			
-			MessageProcessor setBucketVersioningStatusFlow = lookupMessageProcessor("set-bucket-versioning-status");
-			setBucketVersioningStatusFlow.process(getTestEvent(testObjects)); 
-			
-			MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-from-message");
-			MuleEvent createObjectResponse = createObjectFlow.process(getTestEvent(testObjects));
-			
-			testObjects.put("versionId", (String) createObjectResponse.getMessage().getPayload());
-			HashMap<String,Object> firstVersionMetadata = (HashMap<String,Object>) testObjects.get("userMetadata");
-			
-			// update the object
-			
-			testObjects.put("userMetadata", updatedUserMetadata);
-			
-			createObjectFlow = lookupMessageProcessor("create-object-child-elements-from-message");
-			createObjectFlow.process(getTestEvent(testObjects));
-			Thread.sleep(5000);
-			
-			// get-object-optional-attributes-version-id
-			
-			getObjectOptionalAttributesFlow = lookupMessageProcessor("get-object-metadata-optional-attributes-version-id");
-			getObjectOptionalAttributesResponse = getObjectOptionalAttributesFlow.process(getTestEvent(testObjects));
-			
-			ObjectMetadata objectMetadata = (ObjectMetadata) getObjectOptionalAttributesResponse.getMessage().getPayload();
-			
-			assertTrue(objectMetadata.getUserMetadata().equals(firstVersionMetadata));
-	
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		}
-		
-	}
-	
-	@Before
-	public void setUp(){
+    @Category({SmokeTests.class, RegressionTests.class})
+    @Test
+    public void testGetInputStreamObjectMetadata() {
 
-		bucketName = UUID.randomUUID().toString();
-		
-		testObjects = new HashMap<String, Object>();
-		testObjects.put("bucketName", bucketName);
-    	
-		try {
+        InputStream inputStream = null;
 
-			MessageProcessor flow = lookupMessageProcessor("create-bucket");
-			flow.process(getTestEvent(testObjects));
-	
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		}
-			
-	}
-	
-	@After
-	public void tearDown() {
-		
-		try {
-				
-			MessageProcessor flow = lookupMessageProcessor("delete-bucket-optional-attributes");
-			flow.process(getTestEvent(testObjects));
-			
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-				e.printStackTrace();
-				fail();
-		}
-		
-	}
-	
-    @Category({SanityTests.class, RegressionTests.class})
-	@Test
-	public void testGetInputStreamObjectMetadata() {
-    	
-    	InputStream inputStream = null;
-    	
-		testObjects.putAll((HashMap<String,Object>) context.getBean("getInputStreamObjectMetadataTestData"));
+        upsertBeanFromContextOnTestRunMessage("getInputStreamObjectMetadataTestData");
 
-    	String host = testObjects.get("host").toString();
-    	String path = testObjects.get("path").toString();
-    	String urlString = String.format("http://%s/%s",host, path);
-    	
-		try {
+        String host = getTestRunMessageValue("host").toString();
+        String path = getTestRunMessageValue("path").toString();
+        String urlString = String.format("http://%s/%s", host, path);
 
-	    	URL url = new URL(urlString);
-	    	URLConnection connection = url.openConnection();
-	    	inputStream = connection.getInputStream();	    
-	    	
-	    	testObjects.put("contentRef", inputStream);
+        try {
 
-	    	getObjectMetadataVerifications(testObjects);
-			
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		} finally {
-			if (inputStream != null) try { inputStream.close(); } catch (IOException logOrIgnore) {}
-		}
-     
-	}
-    
-    @Category({SanityTests.class, RegressionTests.class})
-	@Test
-	public void testGetByteArrayObjectMetadata() {
+            URL url = new URL(urlString);
+            URLConnection connection = url.openConnection();
+            inputStream = connection.getInputStream();
 
-		testObjects.putAll((HashMap<String,Object>) context.getBean("getByteArrayObjectMetadataTestData"));
-    	
-    	byte data[] = bucketName.getBytes();
-    	testObjects.put("contentRef", data);
-    	
-    	getObjectMetadataVerifications(testObjects);
-     
-	}
-    
-    @Category({SanityTests.class, RegressionTests.class})
-	@Test
-	public void testGetFileObjectMetadata() {
-    	
-    	File temp = null;
-    	
-    	testObjects.putAll((HashMap<String,Object>) context.getBean("getFileObjectMetadataTestData"));
-    	
-		try {
-			
-			temp = File.createTempFile("temp-file-name", ".tmp"); 
-			
-	    	testObjects.put("contentRef", temp);
+            upsertOnTestRunMessage("contentRef", inputStream);
 
-	    	getObjectMetadataVerifications(testObjects);
-			
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		} finally {
-			if (temp != null) {	temp.delete(); }
-		}
-     
-	}
-    
-    @Category({SanityTests.class, RegressionTests.class})
- 	@Test
- 	public void testGetStringObjectMetadata() {
-     	
- 		testObjects.putAll((HashMap<String,Object>) context.getBean("getStringObjectMetadataTestData"));
- 		
- 		getObjectMetadataVerifications(testObjects);
-      
- 	}
-    
-    @Category({RegressionTests.class})
- 	@Test
- 	public void testGetByteArrayObjectMetadataOptionalAttributes() {
-     	
- 		testObjects.putAll((HashMap<String,Object>) context.getBean("getByteArrayObjectMetadataTestData"));
- 		HashMap<String,Object> updatedUserMetadata = (HashMap<String,Object>) context.getBean("getByteArrayObjectMetadataUpdatedUserMetadata");
+            getObjectMetadataVerifications();
 
-     	byte data[] = bucketName.getBytes();
-     	testObjects.put("contentRef", data);
-     	
-     	getObjectMetadataOptionalAttributesVerifications(testObjects, updatedUserMetadata);
-      
- 	}
+        } catch (IOException e) {
+            fail(ConnectorTestUtils.getStackTrace(e));
+        } finally {
+            IOUtils.closeQuietly(inputStream);
+        }
+    }
+
+    @Category({SmokeTests.class, RegressionTests.class})
+    @Test
+    public void testGetByteArrayObjectMetadata() {
+        upsertBeanFromContextOnTestRunMessage("getByteArrayObjectMetadataTestData");
+        try {
+            byte data[] = bucketName.getBytes();
+            upsertOnTestRunMessage("contentRef", data);
+
+            getObjectMetadataVerifications();
+        } catch (Exception e) {
+            fail(ConnectorTestUtils.getStackTrace(e));
+        }
+    }
+
+    @Category({SmokeTests.class, RegressionTests.class})
+    @Test
+    public void testGetFileObjectMetadata() {
+
+        File temp = null;
+
+        upsertBeanFromContextOnTestRunMessage("getFileObjectMetadataTestData");
+
+        try {
+
+            temp = File.createTempFile("temp-file-name", ".tmp");
+
+            upsertOnTestRunMessage("contentRef", temp);
+
+            getObjectMetadataVerifications();
+
+        } catch (IOException e) {
+            fail(ConnectorTestUtils.getStackTrace(e));
+        } finally {
+            if (temp != null) {
+                temp.delete();
+            }
+        }
+
+    }
+
+    @Category({SmokeTests.class, RegressionTests.class})
+    @Test
+    public void testGetStringObjectMetadata() {
+
+        upsertBeanFromContextOnTestRunMessage("getStringObjectMetadataTestData");
+
+        getObjectMetadataVerifications();
+
+    }
 
     @Category({RegressionTests.class})
- 	@Test
- 	public void testGetFileObjectMetadataOptionalAttributes() {
+    @Test
+    public void testGetByteArrayObjectMetadataOptionalAttributes() {
 
- 	    File temp = null;
-	   
- 		testObjects.putAll((HashMap<String,Object>) context.getBean("getFileObjectMetadataTestData"));
- 		HashMap<String,Object> updatedUserMetadata = (HashMap<String,Object>) context.getBean("getFileObjectMetadataUpdatedUserMetadata");
- 		
- 		try {
- 			
- 			temp = File.createTempFile("temp-file-name", ".tmp"); 
- 			
- 	    	testObjects.put("contentRef", temp);
+        upsertBeanFromContextOnTestRunMessage("getByteArrayObjectMetadataTestData");
+        HashMap<String, Object> updatedUserMetadata = getBeanFromContext("getByteArrayObjectMetadataUpdatedUserMetadata");
 
- 	    	getObjectMetadataOptionalAttributesVerifications(testObjects, updatedUserMetadata);
+        byte data[] = bucketName.getBytes();
+        upsertOnTestRunMessage("contentRef", data);
 
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		} finally {
-			if (temp != null) {	temp.delete(); }
-		}
-      
- 	}
+        getObjectMetadataOptionalAttributesVerifications(updatedUserMetadata);
+
+    }
 
     @Category({RegressionTests.class})
- 	@Test
- 	public void testGetInputStreamObjectMetadataOptionalAttributes() {
-     
- 		InputStream inputStream = null;
- 		
- 		testObjects.putAll((HashMap<String,Object>) context.getBean("getInputStreamObjectMetadataTestData"));
- 		HashMap<String,Object> updatedUserMetadata = (HashMap<String,Object>) context.getBean("getInputStreamObjectMetadataUpdatedUserMetadata");
+    @Test
+    public void testGetFileObjectMetadataOptionalAttributes() {
 
-     	String host = testObjects.get("host").toString();
-     	String path = testObjects.get("path").toString();
-     	String urlString = String.format("http://%s/%s",host, path);
-     	
- 		try {
- 			
- 			URL url = new URL(urlString);
- 	    	URLConnection connection = url.openConnection();
- 	    	inputStream = connection.getInputStream();	    
- 	    	
- 	    	testObjects.put("contentRef", inputStream);
+        File temp = null;
 
- 	    	getObjectMetadataOptionalAttributesVerifications(testObjects, updatedUserMetadata);
- 	    	
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		} finally {
-			if (inputStream != null) try { inputStream.close(); } catch (IOException logOrIgnore) {}
-		}
-      
- 	}
- 
+        upsertBeanFromContextOnTestRunMessage("getFileObjectMetadataTestData");
+        HashMap<String, Object> updatedUserMetadata = getBeanFromContext("getFileObjectMetadataUpdatedUserMetadata");
+
+        try {
+
+            temp = File.createTempFile("temp-file-name", ".tmp");
+
+            upsertOnTestRunMessage("contentRef", temp);
+
+            getObjectMetadataOptionalAttributesVerifications(updatedUserMetadata);
+
+        } catch (IOException e) {
+            fail(ConnectorTestUtils.getStackTrace(e));
+        } finally {
+            if (temp != null) {
+                temp.delete();
+            }
+        }
+
+    }
+
     @Category({RegressionTests.class})
-	@Test
-	public void testGetStringObjectMetadataOptionalAttributes() {
-  	
- 		testObjects.putAll((HashMap<String,Object>) context.getBean("getStringObjectMetadataTestData"));
- 		HashMap<String,Object> updatedUserMetadata = (HashMap<String,Object>) context.getBean("getStringObjectUpdatedMetadataUserMetadata");
-		
- 		getObjectMetadataOptionalAttributesVerifications(testObjects, updatedUserMetadata);
- 		
-	}
-    
+    @Test
+    public void testGetInputStreamObjectMetadataOptionalAttributes() {
+
+        InputStream inputStream = null;
+
+        upsertBeanFromContextOnTestRunMessage("getInputStreamObjectMetadataTestData");
+        HashMap<String, Object> updatedUserMetadata = getBeanFromContext("getInputStreamObjectMetadataUpdatedUserMetadata");
+
+        String host = getTestRunMessageValue("host").toString();
+        String path = getTestRunMessageValue("path").toString();
+        String urlString = String.format("http://%s/%s", host, path);
+
+        try {
+
+            URL url = new URL(urlString);
+            URLConnection connection = url.openConnection();
+            inputStream = connection.getInputStream();
+
+            upsertOnTestRunMessage("contentRef", inputStream);
+
+            getObjectMetadataOptionalAttributesVerifications(updatedUserMetadata);
+
+        } catch (IOException e) {
+            fail(ConnectorTestUtils.getStackTrace(e));
+        } finally {
+            IOUtils.closeQuietly(inputStream);
+        }
+
+    }
+
+    @Category({RegressionTests.class})
+    @Test
+    public void testGetStringObjectMetadataOptionalAttributes() {
+
+        upsertBeanFromContextOnTestRunMessage("getStringObjectMetadataTestData");
+        HashMap<String, Object> updatedUserMetadata = getBeanFromContext("getStringObjectUpdatedMetadataUserMetadata");
+
+        getObjectMetadataOptionalAttributesVerifications(updatedUserMetadata);
+
+    }
+
+    private void getObjectMetadataVerifications() {
+
+        try {
+
+            runFlowAndGetPayload("create-object-child-elements-from-message");
+
+            ObjectMetadata objectMetadata = runFlowAndGetPayload("get-object-metadata");
+
+            assertTrue(objectMetadata.getUserMetadata().equals(getTestRunMessageValue("userMetadata")));
+
+        } catch (Exception e) {
+            fail(ConnectorTestUtils.getStackTrace(e));
+        }
+
+    }
+
+    private void getObjectMetadataOptionalAttributesVerifications(HashMap<String, Object> updatedUserMetadata) {
+
+        upsertOnTestRunMessage("versioningStatus", "ENABLED");
+
+        try {
+
+            runFlowAndGetPayload("set-bucket-versioning-status");
+
+            upsertOnTestRunMessage("versionId", runFlowAndGetPayload("create-object-child-elements-from-message").toString());
+            HashMap<String, Object> firstVersionMetadata = (HashMap<String, Object>) getTestRunMessageValue("userMetadata");
+
+            // update the object
+
+            upsertOnTestRunMessage("userMetadata", updatedUserMetadata);
+
+            runFlowAndGetPayload("create-object-child-elements-from-message");
+            Thread.sleep(5000);
+
+            // get-object-optional-attributes-version-id
+
+            ObjectMetadata objectMetadata = runFlowAndGetPayload("get-object-metadata-optional-attributes-version-id");
+
+            assertTrue(objectMetadata.getUserMetadata().equals(firstVersionMetadata));
+
+        } catch (Exception e) {
+            fail(ConnectorTestUtils.getStackTrace(e));
+        }
+
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        runFlowAndGetPayload("delete-bucket-optional-attributes");
+    }
 }

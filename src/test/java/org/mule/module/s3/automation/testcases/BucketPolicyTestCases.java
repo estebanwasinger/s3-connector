@@ -1,118 +1,72 @@
 /**
- * Copyright (c) MuleSoft, Inc. All rights reserved. http://www.mulesoft.com
- *
- * The software in this package is published under the terms of the CPAL v1.0
- * license, a copy of which has been included with this distribution in the
- * LICENSE.md file.
+ * (c) 2003-2015 MuleSoft, Inc. The software in this package is
+ * published under the terms of the CPAL v1.0 license, a copy of which
+ * has been included with this distribution in the LICENSE.md file.
  */
 
 package org.mule.module.s3.automation.testcases;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-
-import java.util.HashMap;
-import java.util.UUID;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.mule.api.MuleEvent;
-import org.mule.api.processor.MessageProcessor;
+import org.mule.module.s3.automation.RegressionTests;
+import org.mule.module.s3.automation.S3TestParent;
+import org.mule.module.s3.automation.SmokeTests;
+import org.mule.modules.tests.ConnectorTestUtils;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class BucketPolicyTestCases extends S3TestParent {
-	
-	private String bucketName;
-	
-	@Before
-	public void setUp(){
-		
-		bucketName = UUID.randomUUID().toString();
-		
-		testObjects = (HashMap<String,Object>) context.getBean("bucketPolicyTestData");
-		testObjects.put("bucketName", bucketName);
-    	
-		try {
 
-			MessageProcessor flow = lookupMessageProcessor("create-bucket");
-			flow.process(getTestEvent(testObjects));
-	
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		}
-			
-	}
-	
-	@After
-	public void tearDown() {
-		
-		try {
-				
-			MessageProcessor flow = lookupMessageProcessor("delete-bucket");
-			MuleEvent response = flow.process(getTestEvent(testObjects));
-			
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-				e.printStackTrace();
-				fail();
-		}
-		
-	}
-	
-    @Category({SanityTests.class, RegressionTests.class})
-	@Test
-	public void testSetAndGetBucketPolicy() {
-    	
-    	testObjects.put("policyText", testObjects.get("policyTemplate").toString().replace("test_bucket_name", bucketName));
-        	    	
-		try {
+    private String policyText;
 
-			MessageProcessor setBucketPolicyFlow = lookupMessageProcessor("set-bucket-policy");
-			setBucketPolicyFlow.process(getTestEvent(testObjects));
-			
-			MessageProcessor getBucketPolicyFlow = lookupMessageProcessor("get-bucket-policy");
-			MuleEvent response = getBucketPolicyFlow.process(getTestEvent(testObjects));
-			
-			String bucketPolicy = response.getMessage().getPayload().toString();
+    @Before
+    public void setUp() throws Exception {
+        initializeTestRunMessage("bucketPolicyTestData");
+        runFlowAndGetPayload("create-bucket");
 
-			assertEquals(testObjects.get("policyText").toString(), bucketPolicy);
-			
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		}
-     
-	}
-    
-    @Category({SanityTests.class, RegressionTests.class})
-	@Test
-	public void testDeleteBucketPolicy() {
-    	
-    	testObjects.put("policyText", testObjects.get("policyTemplate").toString().replace("test_bucket_name", bucketName));
-        	    	
-		try {
+        policyText = ((String) getTestRunMessageValue("policyTemplate")).replace("test_bucket_name", (String) getTestRunMessageValue("bucketName"));
+        upsertOnTestRunMessage("policyText", policyText);
+    }
 
-			MessageProcessor setBucketPolicyFlow = lookupMessageProcessor("set-bucket-policy");
-			setBucketPolicyFlow.process(getTestEvent(testObjects));
-			
-			MessageProcessor deleteBucketPolicyFlow = lookupMessageProcessor("delete-bucket-policy");
-			deleteBucketPolicyFlow.process(getTestEvent(testObjects));
-			
-			MessageProcessor getBucketPolicyFlow = lookupMessageProcessor("get-bucket-policy");
-			MuleEvent response = getBucketPolicyFlow.process(getTestEvent(testObjects));
-			
-			assertEquals("{NullPayload}", response.getMessage().getPayload().toString());
-			
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			fail();
-		}
-     
-	}
-    
+    @Category({SmokeTests.class, RegressionTests.class})
+    @Test
+    public void testSetAndGetBucketPolicy() {
+        try {
+            runFlowAndGetPayload("set-bucket-policy");
+
+            String bucketPolicy = runFlowAndGetPayload("get-bucket-policy");
+
+            assertEquals(policyText, bucketPolicy);
+
+        } catch (Exception e) {
+            fail(ConnectorTestUtils.getStackTrace(e));
+        }
+    }
+
+    @Category({SmokeTests.class, RegressionTests.class})
+    @Test
+    public void testDeleteBucketPolicy() {
+        try {
+            runFlowAndGetPayload("set-bucket-policy");
+
+            Thread.sleep(5000);
+
+            runFlowAndGetPayload("delete-bucket-policy");
+
+            Thread.sleep(5000);
+
+            assertEquals(NULLPAYLOAD, runFlowAndGetPayload("get-bucket-policy").toString());
+
+        } catch (Exception e) {
+            fail(ConnectorTestUtils.getStackTrace(e));
+        }
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        runFlowAndGetPayload("delete-bucket");
+    }
 }
