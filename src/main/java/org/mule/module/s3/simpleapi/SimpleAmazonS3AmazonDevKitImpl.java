@@ -1,9 +1,7 @@
 /**
- * Copyright (c) MuleSoft, Inc. All rights reserved. http://www.mulesoft.com
- *
- * The software in this package is published under the terms of the CPAL v1.0
- * license, a copy of which has been included with this distribution in the
- * LICENSE.md file.
+ * (c) 2003-2015 MuleSoft, Inc. The software in this package is
+ * published under the terms of the CPAL v1.0 license, a copy of which
+ * has been included with this distribution in the LICENSE.md file.
  */
 
 package org.mule.module.s3.simpleapi;
@@ -101,6 +99,11 @@ public class SimpleAmazonS3AmazonDevKitImpl implements SimpleAmazonS3 {
         Validate.notNull(bucketName);
         Validate.notNull(policyText);
         s3.setBucketPolicy(bucketName, policyText);
+    }
+
+    public String getBucketLocation(@NotNull String bucketName) {
+        Validate.notNull(bucketName);
+        return s3.getBucketLocation(bucketName);
     }
 
     // 3.2.1
@@ -278,6 +281,12 @@ public class SimpleAmazonS3AmazonDevKitImpl implements SimpleAmazonS3 {
         return Region.from(location).getObjectUri(objectId, secure);
     }
 
+    @Override
+    public BucketVersioningConfiguration getBucketVersioningConfiguration(@NotNull String bucketName) {
+        Validate.notNull(bucketName);
+        return s3.getBucketVersioningConfiguration(bucketName);
+    }
+
     private class S3ObjectSummaryIterable extends S3SummaryIterable<S3ObjectSummary, ObjectListing> {
 
         ListObjectsRequest request;
@@ -398,12 +407,6 @@ public class SimpleAmazonS3AmazonDevKitImpl implements SimpleAmazonS3 {
         public int size() {
             throw new UnsupportedOperationException();
         }
-    }
-
-    @Override
-    public BucketVersioningConfiguration getBucketVersioningConfiguration(@NotNull String bucketName) {
-        Validate.notNull(bucketName);
-        return s3.getBucketVersioningConfiguration(bucketName);
     }
 
 }

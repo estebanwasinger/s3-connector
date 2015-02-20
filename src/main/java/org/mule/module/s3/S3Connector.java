@@ -1,9 +1,7 @@
 /**
- * Copyright (c) MuleSoft, Inc. All rights reserved. http://www.mulesoft.com
- *
- * The software in this package is published under the terms of the CPAL v1.0
- * license, a copy of which has been included with this distribution in the
- * LICENSE.md file.
+ * (c) 2003-2015 MuleSoft, Inc. The software in this package is
+ * published under the terms of the CPAL v1.0 license, a copy of which
+ * has been included with this distribution in the LICENSE.md file.
  */
 
 package org.mule.module.s3;
@@ -684,6 +682,19 @@ public class S3Connector {
         } else {
             return connection.getClient().createObjectUri(new S3ObjectId(bucketName, key), secure);
         }
+    }
+
+    /**
+     * Gets the geographical region where Amazon S3 stores the specified bucket.
+     * <p/>
+     * {@sample.xml ../../../doc/mule-module-s3.xml.sample s3:get-bucket-location}
+     *
+     * @param bucketName The target bucket name.
+     * @return the location of the specified Amazon S3 bucket.
+     */
+    @Processor
+    public String getBucketLocation(String bucketName) {
+        return connection.getClient().getBucketLocation(bucketName);
     }
 
     public S3ConnectionManagement getConnection() {

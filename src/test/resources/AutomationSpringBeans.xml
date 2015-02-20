@@ -30,7 +30,8 @@
 
     <util:map id="createBucketTestData" map-class="java.util.HashMap"
               key-type="java.lang.String" value-type="java.lang.Object" scope="prototype">
-        <entry key="region" value="US_WEST"/>
+        <entry key="bucketName" value-ref="randomString"/>
+        <entry key="region" value="AP_SYDNEY"/>
         <entry key="acl" value="PUBLIC_READ"/>
     </util:map>
 
@@ -48,6 +49,7 @@
 
     <util:map id="deleteBucketTestData" map-class="java.util.HashMap"
               key-type="java.lang.String" value-type="java.lang.Object" scope="prototype">
+        <entry key="bucketName" value-ref="randomString"/>
         <entry key="key" value="byteArrayKey"/>
         <entry key="userMetadata" value-ref="deleteBucketUserMetadata"/>
     </util:map>
@@ -222,6 +224,14 @@
     <util:map id="createFileObjectURITestData" map-class="java.util.HashMap"
               key-type="java.lang.String" value-type="java.lang.Object" scope="prototype">
         <entry key="key" value="fileKey"/>
+    </util:map>
+
+    <!-- get-bucket-location  -->
+    <util:map id="getBucketLocationTestData" map-class="java.util.HashMap"
+              key-type="java.lang.String" value-type="java.lang.Object" scope="prototype">
+        <entry key="bucketName" value-ref="randomString"/>
+        <entry key="region" value="AP_SYDNEY"/>
+        <entry key="acl" value="PUBLIC_READ"/>
     </util:map>
 
     <!-- get-object -->
@@ -545,6 +555,7 @@
 
     <util:map id="listObjectsTestData" map-class="java.util.HashMap"
               key-type="java.lang.String" value-type="java.lang.Object" scope="prototype">
+        <entry key="bucketName" value-ref="randomString"/>
         <entry key="prefix" value="prefix/"/>
         <entry key="expectedResults" value="2"/>
         <entry key="marker" value="!"/>
@@ -612,6 +623,7 @@
 
     <util:map id="listObjectVersionsTestData" map-class="java.util.HashMap"
               key-type="java.lang.String" value-type="java.lang.Object" scope="prototype">
+        <entry key="bucketName" value-ref="randomString"/>
         <entry key="prefix" value="prefix/"/>
         <entry key="delimiter" value="/"/>
         <entry key="maxResults" value="3"/>

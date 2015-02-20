@@ -1,21 +1,18 @@
 /**
- * Copyright (c) MuleSoft, Inc. All rights reserved. http://www.mulesoft.com
- *
- * The software in this package is published under the terms of the CPAL v1.0
- * license, a copy of which has been included with this distribution in the
- * LICENSE.md file.
+ * (c) 2003-2015 MuleSoft, Inc. The software in this package is
+ * published under the terms of the CPAL v1.0 license, a copy of which
+ * has been included with this distribution in the LICENSE.md file.
  */
 
 package org.mule.module.s3.automation.testcases;
 
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
+import org.apache.commons.io.IOUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.mule.api.MuleEvent;
-import org.mule.api.processor.MessageProcessor;
 import org.mule.module.s3.automation.RegressionTests;
 import org.mule.module.s3.automation.S3TestParent;
 import org.mule.module.s3.automation.SmokeTests;
@@ -32,10 +29,14 @@ import static org.junit.Assert.*;
 
 public class CopyObjectTestCases extends S3TestParent {
 
+    private String bucketName;
+
     @Before
     public void setUp() throws Exception {
         initializeTestRunMessage("copyObjectTestData");
         runFlowAndGetPayload("create-bucket");
+        bucketName = getTestRunMessageValue("bucketName");
+        upsertOnTestRunMessage("sourceBucketName", bucketName);
     }
 
     @Category({SmokeTests.class, RegressionTests.class})
@@ -50,12 +51,7 @@ public class CopyObjectTestCases extends S3TestParent {
             copyObjectChildElementsFromMessageGetVerifications();
 
         } finally {
-            if (inputStream != null) {
-                try {
-                    inputStream.close();
-                } catch (IOException logOrIgnore) {
-                }
-            }
+            IOUtils.closeQuietly(inputStream);
         }
     }
 
@@ -72,10 +68,7 @@ public class CopyObjectTestCases extends S3TestParent {
             copyObjectChildElementsCreateObjectManuallyGetVerifications();
 
         } finally {
-            if (inputStream != null) try {
-                inputStream.close();
-            } catch (IOException logOrIgnore) {
-            }
+            IOUtils.closeQuietly(inputStream);
         }
 
     }
@@ -85,18 +78,13 @@ public class CopyObjectTestCases extends S3TestParent {
     public void testCopyInputStreamObjectChildElementsNone() {
 
         InputStream inputStream = null;
-
         try {
-
             initializeInputStreamTestData(inputStream);
             copyObjectVersioningDisabled("copy-object-child-elements-none");
             copyObjectChildElementsNoneGetVerifications();
 
         } finally {
-            if (inputStream != null) try {
-                inputStream.close();
-            } catch (IOException logOrIgnore) {
-            }
+            IOUtils.closeQuietly(inputStream);
         }
 
     }
@@ -242,21 +230,16 @@ public class CopyObjectTestCases extends S3TestParent {
         Thread.sleep(5000);
         copyObjectOptionalAttributesVersioningDisabledVerifications();
         copyObjectChildElementsFromMessageGetVerifications();
-
     }
 
-    @After
-    public void tearDown() throws Exception {
-        runFlowAndGetPayload("delete-bucket-optional-attributes");
-    }
 
     private void initializeStringTestData() {
-        initializeTestRunMessage("copyStringObjectTestData");
+        upsertBeanFromContextOnTestRunMessage("copyStringObjectTestData");
     }
 
     private void initializeByteArrayTestData() {
-        initializeTestRunMessage("copyByteArrayObjectTestData");
-        upsertOnTestRunMessage("contentRef", ((String) getTestRunMessageValue("bucketName")).getBytes());
+        upsertBeanFromContextOnTestRunMessage("copyByteArrayObjectTestData");
+        upsertOnTestRunMessage("contentRef", (bucketName).getBytes());
     }
 
     private void copyObjectChildElementsNoneGetVerifications() {
@@ -266,7 +249,7 @@ public class CopyObjectTestCases extends S3TestParent {
             S3Object s3object = runFlowAndGetPayload("get-object");
             ObjectMetadata objectMetadata = s3object.getObjectMetadata();
 
-            assertEquals(getTestRunMessageValue("bucketName"), s3object.getBucketName());
+            assertEquals(bucketName, s3object.getBucketName());
             assertEquals(getTestRunMessageValue("destinationKey").toString(), s3object.getKey());
 
             assertTrue(objectMetadata.getUserMetadata().equals(getTestRunMessageValue("userMetadata")));
@@ -279,14 +262,14 @@ public class CopyObjectTestCases extends S3TestParent {
     private void copyObjectVersioningDisabled(String flowName) {
         try {
             runFlowAndGetPayload("create-object-child-elements-from-message");
-
             String sourceKey = getTestRunMessageValue("key").toString();
+
             String destinationKey = sourceKey + "Copy";
 
             upsertOnTestRunMessage("sourceKey", sourceKey);
             upsertOnTestRunMessage("destinationKey", destinationKey);
 
-            assertTrue(runFlowAndGetPayload(flowName).toString().equals("{NullPayload}"));
+            assertTrue(runFlowAndGetPayload(flowName).toString().equals(NULLPAYLOAD));
         } catch (Exception e) {
             fail(ConnectorTestUtils.getStackTrace(e));
         }
@@ -318,7 +301,7 @@ public class CopyObjectTestCases extends S3TestParent {
             S3Object s3object = runFlowAndGetPayload("get-object");
             ObjectMetadata objectMetadata = s3object.getObjectMetadata();
 
-            assertEquals(getTestRunMessageValue("bucketName"), s3object.getBucketName());
+            assertEquals(bucketName, s3object.getBucketName());
             assertEquals(getTestRunMessageValue("destinationKey").toString(), s3object.getKey());
             assertTrue(objectMetadata.getUserMetadata().equals(destinationUserMetadata));
 
@@ -334,7 +317,7 @@ public class CopyObjectTestCases extends S3TestParent {
             S3Object s3object = runFlowAndGetPayload("get-object");
             ObjectMetadata objectMetadata = s3object.getObjectMetadata();
 
-            assertEquals(getTestRunMessageValue("bucketName"), s3object.getBucketName());
+            assertEquals(bucketName, s3object.getBucketName());
             assertEquals(getTestRunMessageValue("destinationKey").toString(), s3object.getKey());
             assertTrue(objectMetadata.getUserMetadata().equals(getTestRunMessageValue("destinationUserMetadata")));
 
@@ -364,7 +347,7 @@ public class CopyObjectTestCases extends S3TestParent {
 
             String copyByUnmodifiedSinceVersionId = runFlowAndGetPayload("copy-object-optional-attributes-unmodified-since").toString();
 
-            assertFalse(copyByUnmodifiedSinceVersionId.contains("{NullPayload}"));
+            assertFalse(copyByUnmodifiedSinceVersionId.contains(NULLPAYLOAD));
             assertFalse(copyByUnmodifiedSinceVersionId.contains(sourceVersionId));
 
             // update the object
@@ -378,7 +361,7 @@ public class CopyObjectTestCases extends S3TestParent {
 
             String copyByModifiedSinceVersionId = runFlowAndGetPayload("copy-object-optional-attributes-modified-since").toString();
 
-            assertFalse(copyByModifiedSinceVersionId.contains("{NullPayload}"));
+            assertFalse(copyByModifiedSinceVersionId.contains(NULLPAYLOAD));
             assertFalse(copyByModifiedSinceVersionId.contains(sourceVersionId));
 
             // copy-object-optional-attributes-version-id
@@ -387,7 +370,7 @@ public class CopyObjectTestCases extends S3TestParent {
 
             String copyBySourceVersionIdVersionId = runFlowAndGetPayload("copy-object-optional-attributes-source-version-id").toString();
 
-            assertFalse(copyBySourceVersionIdVersionId.contains("{NullPayload}"));
+            assertFalse(copyBySourceVersionIdVersionId.contains(NULLPAYLOAD));
             assertFalse(copyBySourceVersionIdVersionId.contains(sourceVersionId));
 
             // copy-object-optional-attributes-destination-bucket
@@ -397,7 +380,7 @@ public class CopyObjectTestCases extends S3TestParent {
 
             String copyByDestinationBucketVersionId = runFlowAndGetPayload("copy-object-optional-attributes-destination-bucket").toString();
 
-            assertFalse(copyByDestinationBucketVersionId.contains("{NullPayload}"));
+            assertFalse(copyByDestinationBucketVersionId.contains(NULLPAYLOAD));
             assertFalse(copyByDestinationBucketVersionId.contains(sourceVersionId));
         } catch (Exception e) {
             fail(ConnectorTestUtils.getStackTrace(e));
@@ -406,11 +389,6 @@ public class CopyObjectTestCases extends S3TestParent {
     }
 
     private void copyObjectOptionalAttributesVersioningDisabledVerifications() {
-
-        MessageProcessor copyObjectOptionalAttributesFlow;
-        MuleEvent copyObjectOptionalAttributesResponse;
-
-        MessageProcessor createObjectFlow;
 
         S3Object s3object;
         ObjectMetadata objectMetadata;
@@ -428,66 +406,50 @@ public class CopyObjectTestCases extends S3TestParent {
 
             upsertOnTestRunMessage("destinationKey", destinationKey + "UnmodifiedSinceCopy");
 
-            assertEquals("{NullPayload}", runFlowAndGetPayload("copy-object-optional-attributes-unmodified-since").toString());
+            assertEquals(NULLPAYLOAD, runFlowAndGetPayload("copy-object-optional-attributes-unmodified-since").toString());
 
             // update the object
 
-            upsertOnTestRunMessage(("userMetadata", new HashMap<String, Object>());
+            upsertOnTestRunMessage("userMetadata", new HashMap<String, Object>());
 
-            createObjectFlow = lookupMessageProcessor("create-object-child-elements-from-message");
-            createObjectFlow.process(getTestEvent(testObjects));
+            runFlowAndGetPayload("create-object-child-elements-from-message");
 
             // copy-object-optional-attributes-modified-since
 
-            testObjects.put("destinationKey", destinationKey + "ModifiedSinceCopy");
+            upsertOnTestRunMessage("destinationKey", destinationKey + "ModifiedSinceCopy");
 
-            copyObjectOptionalAttributesFlow = lookupMessageProcessor("copy-object-optional-attributes-modified-since");
-            copyObjectOptionalAttributesResponse = copyObjectOptionalAttributesFlow.process(getTestEvent(testObjects));
-
-            assertEquals("{NullPayload}", copyObjectOptionalAttributesResponse.getMessage().getPayload().toString());
+            assertEquals(NULLPAYLOAD, runFlowAndGetPayload("copy-object-optional-attributes-modified-since").toString());
 
             // copy-object-optional-attributes-destination-bucket
 
-            testObjects.put("destinationKey", destinationKey + "DestinationBucketCopy");
-            testObjects.put("destinationBucketName", testObjects.get("sourceBucketName").toString());
+            upsertOnTestRunMessage("destinationKey", destinationKey + "DestinationBucketCopy");
+            upsertOnTestRunMessage("destinationBucketName", getTestRunMessageValue("sourceBucketName").toString());
 
-            copyObjectOptionalAttributesFlow = lookupMessageProcessor("copy-object-optional-attributes-destination-bucket");
-            copyObjectOptionalAttributesResponse = copyObjectOptionalAttributesFlow.process(getTestEvent(testObjects));
-
-            assertEquals("{NullPayload}", copyObjectOptionalAttributesResponse.getMessage().getPayload().toString());
+            assertEquals(NULLPAYLOAD, runFlowAndGetPayload("copy-object-optional-attributes-destination-bucket").toString());
 
         } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            fail();
+            fail(ConnectorTestUtils.getStackTrace(e));
         }
-
     }
 
 
     private void initializeFileTestData(File tempFile) {
 
-        testObjects.putAll((HashMap<String, Object>) context.getBean("copyFileObjectTestData"));
-
+        upsertBeanFromContextOnTestRunMessage("copyFileObjectTestData");
         try {
-
             tempFile = tempFile.createTempFile("temp-file-name", ".tmp");
-            testObjects.put("contentRef", tempFile);
-
+            upsertOnTestRunMessage("contentRef", tempFile);
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             if (tempFile != null) {
                 tempFile.delete();
             }
-            e.printStackTrace();
-            fail();
+            fail(ConnectorTestUtils.getStackTrace(e));
         }
-
     }
 
     private void initializeInputStreamTestData(InputStream inputStream) {
 
-        initializeTestRunMessage("copyInputStreamObjectTestData");
+        upsertBeanFromContextOnTestRunMessage("copyInputStreamObjectTestData");
 
         String host = getTestRunMessageValue("host").toString();
         String path = getTestRunMessageValue("path").toString();
@@ -502,13 +464,13 @@ public class CopyObjectTestCases extends S3TestParent {
             upsertOnTestRunMessage("contentRef", inputStream);
 
         } catch (IOException e) {
-            if (inputStream != null) {
-                try {
-                    inputStream.close();
-                } catch (IOException logOrIgnore) {
-                }
-            }
+            IOUtils.closeQuietly(inputStream);
             fail(ConnectorTestUtils.getStackTrace(e));
         }
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        runFlowAndGetPayload("delete-bucket-optional-attributes");
     }
 }

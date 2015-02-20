@@ -1,9 +1,7 @@
 /**
- * Copyright (c) MuleSoft, Inc. All rights reserved. http://www.mulesoft.com
- *
- * The software in this package is published under the terms of the CPAL v1.0
- * license, a copy of which has been included with this distribution in the
- * LICENSE.md file.
+ * (c) 2003-2015 MuleSoft, Inc. The software in this package is
+ * published under the terms of the CPAL v1.0 license, a copy of which
+ * has been included with this distribution in the LICENSE.md file.
  */
 
 package org.mule.module.s3.simpleapi;
@@ -89,6 +87,14 @@ public interface SimpleAmazonS3 {
     String getBucketPolicy(@NotNull String bucketName);
 
     void setBucketPolicy(@NotNull String bucketName, @NotNull String policyText);
+
+    /**
+     * Gets the geographical region where Amazon S3 stores the specified bucket.
+     *
+     * @param bucketName
+     * @return the location of the specified Amazon S3 bucket.
+     */
+    String getBucketLocation(@NotNull String bucketName);
 
     void deleteBucketWebsiteConfiguration(@NotNull String bucketName);
 
@@ -225,6 +231,15 @@ public interface SimpleAmazonS3 {
                         String encryption);
 
     /**
+     * Returns the bucket versioning configuration for the specified bucket.
+     *
+     * @param bucketName The bucket versioning configuration for the specified bucket.
+     * @return The bucket versioning configuration for the specified bucket.
+     */
+    public BucketVersioningConfiguration getBucketVersioningConfiguration(
+            @NotNull String bucketName);
+
+    /**
      * The content to be uploaded to S3, capable of creating a
      * {@link PutObjectRequest}.
      */
@@ -237,14 +252,5 @@ public interface SimpleAmazonS3 {
          */
         PutObjectRequest createPutObjectRequest();
     }
-
-    /**
-     * Returns the bucket versioning configuration for the specified bucket.
-     *
-     * @param bucketName The bucket versioning configuration for the specified bucket.
-     * @return The bucket versioning configuration for the specified bucket.
-     */
-    public BucketVersioningConfiguration getBucketVersioningConfiguration(
-            @NotNull String bucketName);
 
 }

@@ -7,7 +7,6 @@
 package org.mule.module.s3.automation.testcases;
 
 import com.amazonaws.services.s3.model.Bucket;
-import com.amazonaws.services.s3.model.Region;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -15,46 +14,36 @@ import org.junit.experimental.categories.Category;
 import org.mule.module.s3.automation.RegressionTests;
 import org.mule.module.s3.automation.S3TestParent;
 import org.mule.module.s3.automation.SmokeTests;
+import org.mule.module.s3.simpleapi.Region;
 import org.mule.modules.tests.ConnectorTestUtils;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
-public class CreateBucketTestCases extends S3TestParent {
+public class GetBucketLocationTestCases extends S3TestParent {
+
+    String bucketName;
 
     @Before
     public void setUp() throws Exception {
-        initializeTestRunMessage("createBucketTestData");
+        initializeTestRunMessage("getBucketLocationTestData");
+        bucketName = ((Bucket) runFlowAndGetPayload("create-bucket-optional-attributes")).getName();
     }
 
     @Category({SmokeTests.class, RegressionTests.class})
     @Test
-    public void testCreateBucket() {
+    public void testGetBucketLocation() {
         try {
-            Bucket bucket = runFlowAndGetPayload("create-bucket");
+            
+            String bucketLocation = runFlowAndGetPayload("get-bucket-location");
+            Region region = Region.valueOf(getTestRunMessageValue("region").toString());
+            assertEquals(bucketLocation, region.toS3Equivalent().getFirstRegionId());
 
-            assertEquals(getTestRunMessageValue("bucketName"), bucket.getName());
         } catch (Exception e) {
             fail(ConnectorTestUtils.getStackTrace(e));
         }
 
-    }
-
-    @Category({RegressionTests.class})
-    @Test
-    public void testCreateBucketOptionalAttributes() {
-
-        try {
-            Bucket bucket = runFlowAndGetPayload("create-bucket-optional-attributes");
-
-            assertEquals(getTestRunMessageValue("bucketName"), bucket.getName());
-
-            String location = runFlowAndGetPayload("get-bucket-location");
-
-            assertTrue(Region.fromValue(location).name().equalsIgnoreCase((String) getTestRunMessageValue("region")));
-
-        } catch (Exception e) {
-            fail(ConnectorTestUtils.getStackTrace(e));
-        }
     }
 
     @After

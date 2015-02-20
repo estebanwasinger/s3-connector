@@ -1,31 +1,31 @@
 /**
- * Copyright (c) MuleSoft, Inc. All rights reserved. http://www.mulesoft.com
- *
- * The software in this package is published under the terms of the CPAL v1.0
- * license, a copy of which has been included with this distribution in the
- * LICENSE.md file.
+ * (c) 2003-2015 MuleSoft, Inc. The software in this package is
+ * published under the terms of the CPAL v1.0 license, a copy of which
+ * has been included with this distribution in the LICENSE.md file.
  */
 
 package org.mule.module.s3.automation.testcases;
 
+import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import org.apache.commons.io.IOUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.mule.api.MuleEvent;
-import org.mule.api.processor.MessageProcessor;
 import org.mule.module.s3.automation.RegressionTests;
 import org.mule.module.s3.automation.S3TestParent;
 import org.mule.module.s3.automation.SmokeTests;
 import org.mule.module.s3.simpleapi.KeyVersion;
+import org.mule.modules.tests.ConnectorTestUtils;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
@@ -36,42 +36,10 @@ public class DeleteObjectsTestCases extends S3TestParent {
     private List<KeyVersion> keyVersionList;
 
     @Before
-    public void setUp() {
-
-        bucketName = UUID.randomUUID().toString();
-
+    public void setUp() throws Exception {
+        initializeTestRunMessage("createBucketTestData");
+        bucketName = ((Bucket) runFlowAndGetPayload("create-bucket")).getName();
         keyVersionList = new ArrayList<KeyVersion>();
-
-        testObjects = new HashMap<String, Object>();
-        testObjects.put("bucketName", bucketName);
-
-        try {
-
-            MessageProcessor flow = lookupMessageProcessor("create-bucket");
-            flow.process(getTestEvent(testObjects));
-
-        } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            fail();
-        }
-
-    }
-
-    @After
-    public void tearDown() {
-
-        try {
-
-            MessageProcessor flow = lookupMessageProcessor("delete-bucket-optional-attributes");
-            flow.process(getTestEvent(testObjects));
-
-        } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            fail();
-        }
-
     }
 
     @Category({SmokeTests.class, RegressionTests.class})
@@ -80,10 +48,10 @@ public class DeleteObjectsTestCases extends S3TestParent {
 
         InputStream inputStream = null;
 
-        testObjects.putAll((HashMap<String, Object>) context.getBean("deleteInputStreamObjectTestData"));
+        upsertBeanFromContextOnTestRunMessage("deleteInputStreamObjectTestData");
 
-        String host = testObjects.get("host").toString();
-        String path = testObjects.get("path").toString();
+        String host = getTestRunMessageValue("host").toString();
+        String path = getTestRunMessageValue("path").toString();
         String urlString = String.format("http://%s/%s", host, path);
 
         try {
@@ -92,21 +60,15 @@ public class DeleteObjectsTestCases extends S3TestParent {
             URLConnection connection = url.openConnection();
             inputStream = connection.getInputStream();
 
-            testObjects.put("contentRef", inputStream);
+            upsertOnTestRunMessage("contentRef", inputStream);
 
             createDeleteAndCheckBucketContents(true);
 
         } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            fail();
+            fail(ConnectorTestUtils.getStackTrace(e));
         } finally {
-            if (inputStream != null) try {
-                inputStream.close();
-            } catch (IOException logOrIgnore) {
-            }
+            IOUtils.closeQuietly(inputStream);
         }
-
     }
 
     @Category({SmokeTests.class, RegressionTests.class})
@@ -115,10 +77,10 @@ public class DeleteObjectsTestCases extends S3TestParent {
 
         InputStream inputStream = null;
 
-        testObjects.putAll((HashMap<String, Object>) context.getBean("deleteInputStreamObjectTestData"));
+        upsertBeanFromContextOnTestRunMessage("deleteInputStreamObjectTestData");
 
-        String host = testObjects.get("host").toString();
-        String path = testObjects.get("path").toString();
+        String host = getTestRunMessageValue("host").toString();
+        String path = getTestRunMessageValue("path").toString();
         String urlString = String.format("http://%s/%s", host, path);
 
         try {
@@ -127,29 +89,22 @@ public class DeleteObjectsTestCases extends S3TestParent {
             URLConnection connection = url.openConnection();
             inputStream = connection.getInputStream();
 
-            testObjects.put("contentRef", inputStream);
+            upsertOnTestRunMessage("contentRef", inputStream);
 
             createDeleteAndCheckBucketContents(false);
 
         } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            fail();
+            fail(ConnectorTestUtils.getStackTrace(e));
         } finally {
-            if (inputStream != null) try {
-                inputStream.close();
-            } catch (IOException logOrIgnore) {
-            }
+            IOUtils.closeQuietly(inputStream);
         }
-
     }
 
     @Category({SmokeTests.class, RegressionTests.class})
     @Test
     public void testDeleteStringObjects() {
 
-        testObjects.putAll((HashMap<String, Object>) context.getBean("deleteStringObjectTestData"));
-
+        upsertBeanFromContextOnTestRunMessage("deleteStringObjectTestData");
         createDeleteAndCheckBucketContents(false);
 
     }
@@ -158,81 +113,22 @@ public class DeleteObjectsTestCases extends S3TestParent {
     @Test
     public void testDeleteStringObjectsVersioningEnabled() {
 
-        testObjects.putAll((HashMap<String, Object>) context.getBean("deleteStringObjectTestData"));
-
+        upsertBeanFromContextOnTestRunMessage("deleteStringObjectTestData");
         try {
-
             createDeleteAndCheckBucketContents(true);
-
         } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            fail();
+            fail(ConnectorTestUtils.getStackTrace(e));
         }
-
-    }
-
-    private void createDeleteAndCheckBucketContents(boolean versioning) {
-
-        KeyVersion keyVersion = new KeyVersion();
-
-        try {
-
-            if (versioning) {
-
-                testObjects.put("versioningStatus", "ENABLED");
-
-                MessageProcessor setBucketVersioningStatusFlow = lookupMessageProcessor("set-bucket-versioning-status");
-                setBucketVersioningStatusFlow.process(getTestEvent(testObjects));
-
-            }
-
-            MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-from-message");
-            MuleEvent response = createObjectFlow.process(getTestEvent(testObjects));
-
-            if (versioning) {
-
-                keyVersion.setVersion(response.getMessage().getPayload().toString());
-
-            }
-
-            keyVersion.setValue(testObjects.get("key").toString());
-            keyVersionList.add(keyVersion);
-
-            testObjects.put("keysReference", keyVersionList);
-
-            MessageProcessor deleteObjectFlow = lookupMessageProcessor("delete-objects");
-            deleteObjectFlow.process(getTestEvent(testObjects));
-
-            MessageProcessor listObjectsFlow = lookupMessageProcessor("list-objects");
-            MuleEvent listObjectsResponse = listObjectsFlow.process(getTestEvent(testObjects));
-            Iterable<S3ObjectSummary> s3ObjectsSummaries = (Iterable<S3ObjectSummary>) listObjectsResponse.getMessage().getPayload();
-
-            Iterator<S3ObjectSummary> iterator = s3ObjectsSummaries.iterator();
-
-            while (iterator.hasNext()) {
-
-                S3ObjectSummary s3ObjectSummary = iterator.next();
-                assertFalse(s3ObjectSummary.getKey().equals(testObjects.get("key").toString()));
-
-            }
-
-        } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            fail();
-        }
-
     }
 
     @Category({SmokeTests.class, RegressionTests.class})
     @Test
     public void testDeleteByteArrayObjects() {
 
-        testObjects.putAll((HashMap<String, Object>) context.getBean("deleteByteArrayObjectTestData"));
+        upsertBeanFromContextOnTestRunMessage("deleteByteArrayObjectTestData");
 
         byte data[] = bucketName.getBytes();
-        testObjects.put("contentRef", data);
+        upsertOnTestRunMessage("contentRef", data);
 
         createDeleteAndCheckBucketContents(false);
 
@@ -242,10 +138,10 @@ public class DeleteObjectsTestCases extends S3TestParent {
     @Test
     public void testDeleteByteArrayObjectsVersioningEnabled() {
 
-        testObjects.putAll((HashMap<String, Object>) context.getBean("deleteByteArrayObjectTestData"));
+        upsertBeanFromContextOnTestRunMessage("deleteByteArrayObjectTestData");
 
         byte data[] = bucketName.getBytes();
-        testObjects.put("contentRef", data);
+        upsertOnTestRunMessage("contentRef", data);
 
         createDeleteAndCheckBucketContents(true);
 
@@ -257,20 +153,18 @@ public class DeleteObjectsTestCases extends S3TestParent {
 
         File temp = null;
 
-        testObjects.putAll((HashMap<String, Object>) context.getBean("deleteFileObjectTestData"));
+        upsertBeanFromContextOnTestRunMessage("deleteFileObjectTestData");
 
         try {
 
             temp = File.createTempFile("temp-file-name", ".tmp");
 
-            testObjects.put("contentRef", temp);
+            upsertOnTestRunMessage("contentRef", temp);
 
             createDeleteAndCheckBucketContents(false);
 
         } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            fail();
+            fail(ConnectorTestUtils.getStackTrace(e));
         } finally {
             if (temp != null) {
                 temp.delete();
@@ -285,26 +179,62 @@ public class DeleteObjectsTestCases extends S3TestParent {
 
         File temp = null;
 
-        testObjects.putAll((HashMap<String, Object>) context.getBean("deleteFileObjectTestData"));
+        upsertBeanFromContextOnTestRunMessage("deleteFileObjectTestData");
 
         try {
 
             temp = File.createTempFile("temp-file-name", ".tmp");
 
-            testObjects.put("contentRef", temp);
+            upsertOnTestRunMessage("contentRef", temp);
 
             createDeleteAndCheckBucketContents(true);
 
         } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            fail();
+            fail(ConnectorTestUtils.getStackTrace(e));
         } finally {
             if (temp != null) {
                 temp.delete();
             }
         }
 
+    }
+
+    private void createDeleteAndCheckBucketContents(boolean versioning) {
+
+        KeyVersion keyVersion = new KeyVersion();
+
+        try {
+            if (versioning) {
+                upsertOnTestRunMessage("versioningStatus", "ENABLED");
+                runFlowAndGetPayload("set-bucket-versioning-status");
+                keyVersion.setVersion(runFlowAndGetPayload("create-object-child-elements-from-message").toString());
+            }
+
+            keyVersion.setValue(getTestRunMessageValue("key").toString());
+            keyVersionList.add(keyVersion);
+
+            upsertOnTestRunMessage("keysReference", keyVersionList);
+
+            runFlowAndGetPayload("delete-objects");
+
+            Iterable<S3ObjectSummary> s3ObjectsSummaries = (Iterable<S3ObjectSummary>) runFlowAndGetPayload("list-objects");
+
+            Iterator<S3ObjectSummary> iterator = s3ObjectsSummaries.iterator();
+
+            while (iterator.hasNext()) {
+
+                S3ObjectSummary s3ObjectSummary = iterator.next();
+                assertFalse(s3ObjectSummary.getKey().equals(getTestRunMessageValue("key").toString()));
+            }
+        } catch (Exception e) {
+            fail(ConnectorTestUtils.getStackTrace(e));
+        }
+
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        runFlowAndGetPayload("delete-bucket-optional-attributes");
     }
 
 }

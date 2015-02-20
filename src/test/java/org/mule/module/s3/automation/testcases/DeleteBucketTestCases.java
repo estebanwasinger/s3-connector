@@ -1,9 +1,7 @@
 /**
- * Copyright (c) MuleSoft, Inc. All rights reserved. http://www.mulesoft.com
- *
- * The software in this package is published under the terms of the CPAL v1.0
- * license, a copy of which has been included with this distribution in the
- * LICENSE.md file.
+ * (c) 2003-2015 MuleSoft, Inc. The software in this package is
+ * published under the terms of the CPAL v1.0 license, a copy of which
+ * has been included with this distribution in the LICENSE.md file.
  */
 
 package org.mule.module.s3.automation.testcases;
@@ -12,16 +10,14 @@ import com.amazonaws.services.s3.model.Bucket;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.mule.api.MuleEvent;
-import org.mule.api.processor.MessageProcessor;
 import org.mule.module.s3.automation.RegressionTests;
 import org.mule.module.s3.automation.S3TestParent;
 import org.mule.module.s3.automation.SmokeTests;
+import org.mule.modules.tests.ConnectorTestUtils;
 
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.UUID;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -31,24 +27,10 @@ public class DeleteBucketTestCases extends S3TestParent {
     String bucketName;
 
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
 
-        bucketName = UUID.randomUUID().toString();
-
-        testObjects = (HashMap<String, Object>) context.getBean("deleteBucketTestData");
-        testObjects.put("bucketName", bucketName);
-
-        MessageProcessor flow = lookupMessageProcessor("create-bucket");
-
-        try {
-
-            MuleEvent response = flow.process(getTestEvent(testObjects));
-
-        } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            fail();
-        }
+        initializeTestRunMessage("deleteBucketTestData");
+        bucketName = ((Bucket) runFlowAndGetPayload("create-bucket")).getName();
 
     }
 
@@ -60,13 +42,9 @@ public class DeleteBucketTestCases extends S3TestParent {
 
         try {
 
-            MessageProcessor deleteBucketFlow = lookupMessageProcessor("delete-bucket");
-            deleteBucketFlow.process(getTestEvent(testObjects));
+            runFlowAndGetPayload("delete-bucket");
 
-            MessageProcessor listBucketsFlow = lookupMessageProcessor("list-buckets");
-            MuleEvent response = listBucketsFlow.process(getTestEvent(null));
-
-            List<Bucket> buckets = (List<Bucket>) response.getMessage().getPayload();
+            List<Bucket> buckets = runFlowAndGetPayload("list-buckets");
             Iterator<Bucket> iterator = buckets.iterator();
 
             while (iterator.hasNext() && !bucketNotFound) {
@@ -75,17 +53,11 @@ public class DeleteBucketTestCases extends S3TestParent {
                 if (bucket.getName().equals(bucketName)) {
                     bucketNotFound = false;
                 }
-
             }
-
             assertTrue(bucketNotFound);
-
         } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            fail();
+            fail(ConnectorTestUtils.getStackTrace(e));
         }
-
     }
 
     @Category({SmokeTests.class, RegressionTests.class})
@@ -94,33 +66,26 @@ public class DeleteBucketTestCases extends S3TestParent {
 
         boolean bucketNotFound = true;
 
-        HashMap<String, Object> updatedUserMetadata = (HashMap<String, Object>) context.getBean("deleteBucketUpdatedUserMetadata");
+        HashMap<String, Object> updatedUserMetadata = getBeanFromContext("deleteBucketUpdatedUserMetadata");
 
         byte data[] = bucketName.getBytes();
-        testObjects.put("contentRef", data);
+        upsertOnTestRunMessage("contentRef", data);
 
-        testObjects.put("versioningStatus", "ENABLED");
+        upsertOnTestRunMessage("versioningStatus", "ENABLED");
 
         try {
 
-            MessageProcessor setBucketVersioningStatusFlow = lookupMessageProcessor("set-bucket-versioning-status");
-            setBucketVersioningStatusFlow.process(getTestEvent(testObjects));
+            runFlowAndGetPayload("set-bucket-versioning-status");
 
-            MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-from-message");
-            createObjectFlow.process(getTestEvent(testObjects));
+            runFlowAndGetPayload("create-object-child-elements-from-message");
 
-            testObjects.put("userMetadata", updatedUserMetadata);
+            upsertOnTestRunMessage("userMetadata", updatedUserMetadata);
 
-            createObjectFlow = lookupMessageProcessor("create-object-child-elements-from-message");
-            createObjectFlow.process(getTestEvent(testObjects));
+            runFlowAndGetPayload("create-object-child-elements-from-message");
 
-            MessageProcessor deleteBucketFlow = lookupMessageProcessor("delete-bucket-optional-attributes");
-            deleteBucketFlow.process(getTestEvent(testObjects));
+            runFlowAndGetPayload("delete-bucket-optional-attributes");
 
-            MessageProcessor listBucketsFlow = lookupMessageProcessor("list-buckets");
-            MuleEvent listBucketsResponse = listBucketsFlow.process(getTestEvent(null));
-
-            List<Bucket> buckets = (List<Bucket>) listBucketsResponse.getMessage().getPayload();
+            List<Bucket> buckets = (List<Bucket>) runFlowAndGetPayload("list-buckets");
             Iterator<Bucket> iterator = buckets.iterator();
 
             while (iterator.hasNext() && !bucketNotFound) {
@@ -135,9 +100,7 @@ public class DeleteBucketTestCases extends S3TestParent {
             assertTrue(bucketNotFound);
 
         } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            fail();
+            fail(ConnectorTestUtils.getStackTrace(e));
         }
 
     }

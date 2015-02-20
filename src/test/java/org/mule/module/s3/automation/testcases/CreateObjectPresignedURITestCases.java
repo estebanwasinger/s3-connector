@@ -1,31 +1,27 @@
 /**
- * Copyright (c) MuleSoft, Inc. All rights reserved. http://www.mulesoft.com
- *
- * The software in this package is published under the terms of the CPAL v1.0
- * license, a copy of which has been included with this distribution in the
- * LICENSE.md file.
+ * (c) 2003-2015 MuleSoft, Inc. The software in this package is
+ * published under the terms of the CPAL v1.0 license, a copy of which
+ * has been included with this distribution in the LICENSE.md file.
  */
 
 package org.mule.module.s3.automation.testcases;
 
+import com.amazonaws.services.s3.model.Bucket;
+import org.apache.commons.io.IOUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.mule.api.MuleEvent;
-import org.mule.api.processor.MessageProcessor;
 import org.mule.module.s3.automation.RegressionTests;
 import org.mule.module.s3.automation.S3TestParent;
 import org.mule.module.s3.automation.SmokeTests;
+import org.mule.modules.tests.ConnectorTestUtils;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.HashMap;
-import java.util.UUID;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
@@ -35,40 +31,9 @@ public class CreateObjectPresignedURITestCases extends S3TestParent {
     String bucketName;
 
     @Before
-    public void setUp() {
-
-        bucketName = UUID.randomUUID().toString();
-
-        testObjects = new HashMap<String, Object>();
-        testObjects.put("bucketName", bucketName);
-
-        try {
-
-            MessageProcessor flow = lookupMessageProcessor("create-bucket");
-            flow.process(getTestEvent(testObjects));
-
-        } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            fail();
-        }
-
-    }
-
-    @After
-    public void tearDown() {
-
-        try {
-
-            MessageProcessor flow = lookupMessageProcessor("delete-bucket-optional-attributes");
-            flow.process(getTestEvent(testObjects));
-
-        } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            fail();
-        }
-
+    public void setUp() throws Exception {
+        initializeTestRunMessage("createBucketTestData");
+        bucketName = ((Bucket) runFlowAndGetPayload("create-bucket")).getName();
     }
 
     @Category({SmokeTests.class, RegressionTests.class})
@@ -77,42 +42,26 @@ public class CreateObjectPresignedURITestCases extends S3TestParent {
 
         InputStream inputStream = null;
 
-        testObjects.putAll((HashMap<String, Object>) context.getBean("createInputStreamObjectPresignedURITestData"));
+        upsertBeanFromContextOnTestRunMessage("createInputStreamObjectPresignedURITestData");
 
-        String host = testObjects.get("host").toString();
-        String path = testObjects.get("path").toString();
+        String host = getTestRunMessageValue("host").toString();
+        String path = getTestRunMessageValue("path").toString();
         String urlString = String.format("http://%s/%s", host, path);
-
         try {
-
             URL url = new URL(urlString);
             URLConnection connection = url.openConnection();
             inputStream = connection.getInputStream();
 
-            testObjects.put("contentRef", inputStream);
+            upsertOnTestRunMessage("contentRef", inputStream);
 
-            MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-none");
-            createObjectFlow.process(getTestEvent(testObjects));
+            runFlowAndGetPayload("create-object-child-elements-none");
 
-            MessageProcessor createObjectPresignedURIFlow = lookupMessageProcessor("create-object-presigned-uri");
-            MuleEvent response = createObjectPresignedURIFlow.process(getTestEvent(testObjects));
-
-            assertNotNull(((URI) response.getMessage().getPayload()).toURL());
-
+            assertNotNull(((URI) runFlowAndGetPayload("create-object-presigned-uri")).toURL());
         } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            fail();
-
+            fail(ConnectorTestUtils.getStackTrace(e));
         } finally {
-
-            if (inputStream != null) try {
-                inputStream.close();
-            } catch (IOException logOrIgnore) {
-            }
-
+            IOUtils.closeQuietly(inputStream);
         }
-
     }
 
     @Category({RegressionTests.class})
@@ -121,77 +70,50 @@ public class CreateObjectPresignedURITestCases extends S3TestParent {
 
         InputStream inputStream = null;
 
-        testObjects.putAll((HashMap<String, Object>) context.getBean("createInputStreamObjectPresignedURITestData"));
+        upsertBeanFromContextOnTestRunMessage("createInputStreamObjectPresignedURITestData");
 
-        String host = testObjects.get("host").toString();
-        String path = testObjects.get("path").toString();
+        String host = getTestRunMessageValue("host").toString();
+        String path = getTestRunMessageValue("path").toString();
         String urlString = String.format("http://%s/%s", host, path);
 
         try {
+            upsertOnTestRunMessage("versioningStatus", "ENABLED");
 
-            testObjects.put("versioningStatus", "ENABLED");
-
-            MessageProcessor setBucketVersioningStatusFlow = lookupMessageProcessor("set-bucket-versioning-status");
-            setBucketVersioningStatusFlow.process(getTestEvent(testObjects));
+            runFlowAndGetPayload("set-bucket-versioning-status");
 
             URL url = new URL(urlString);
             URLConnection connection = url.openConnection();
             inputStream = connection.getInputStream();
 
-            testObjects.put("contentRef", inputStream);
+            upsertOnTestRunMessage("contentRef", inputStream);
 
-            MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-none");
-            MuleEvent createObjectResponse = createObjectFlow.process(getTestEvent(testObjects));
+            upsertOnTestRunMessage("versionId", runFlowAndGetPayload("create-object-child-elements-none"));
 
-            testObjects.put("versionId", (String) createObjectResponse.getMessage().getPayload());
-
-            createObjectFlow = lookupMessageProcessor("create-object-child-elements-none");
-            createObjectFlow.process(getTestEvent(testObjects));
-
-            MessageProcessor createObjectPresignedURIFlow = lookupMessageProcessor("create-object-presigned-uri-optional-attributes");
-            MuleEvent createObjectPresignedURIResponse = createObjectPresignedURIFlow.process(getTestEvent(testObjects));
-
-            assertNotNull(((URI) createObjectPresignedURIResponse.getMessage().getPayload()).toURL());
+            assertNotNull(((URI) runFlowAndGetPayload("create-object-presigned-uri-optional-attributes")).toURL());
 
         } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            fail();
+            fail(ConnectorTestUtils.getStackTrace(e));
 
         } finally {
-
-            if (inputStream != null) try {
-                inputStream.close();
-            } catch (IOException logOrIgnore) {
-            }
-
+            IOUtils.closeQuietly(inputStream);
         }
-
     }
 
     @Category({SmokeTests.class, RegressionTests.class})
     @Test
     public void testCreateByteArrayObjectPresignedURI() {
-
-        testObjects.putAll((HashMap<String, Object>) context.getBean("createByteArrayObjectPresignedURITestData"));
+        upsertBeanFromContextOnTestRunMessage("createByteArrayObjectPresignedURITestData");
 
         byte data[] = bucketName.getBytes();
-        testObjects.put("contentRef", data);
+        upsertOnTestRunMessage("contentRef", data);
 
         try {
+            runFlowAndGetPayload("create-object-child-elements-none");
 
-            MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-none");
-            createObjectFlow.process(getTestEvent(testObjects));
-
-            MessageProcessor createObjectPresignedURIFlow = lookupMessageProcessor("create-object-presigned-uri");
-            MuleEvent response = createObjectPresignedURIFlow.process(getTestEvent(testObjects));
-
-            assertNotNull(((URI) response.getMessage().getPayload()).toURL());
+            assertNotNull(((URI) runFlowAndGetPayload("create-object-presigned-uri")).toURL());
 
         } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            fail();
+            fail(ConnectorTestUtils.getStackTrace(e));
         }
 
     }
@@ -200,24 +122,16 @@ public class CreateObjectPresignedURITestCases extends S3TestParent {
     @Test
     public void testCreateStringObjectPresignedURI() {
 
-        testObjects.putAll((HashMap<String, Object>) context.getBean("createStringObjectPresignedURITestData"));
+        upsertBeanFromContextOnTestRunMessage("createStringObjectPresignedURITestData");
 
         try {
+            runFlowAndGetPayload("create-object-child-elements-none");
 
-            MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-none");
-            createObjectFlow.process(getTestEvent(testObjects));
-
-            MessageProcessor createObjectPresignedURIFlow = lookupMessageProcessor("create-object-presigned-uri");
-            MuleEvent response = createObjectPresignedURIFlow.process(getTestEvent(testObjects));
-
-            assertNotNull(((URI) response.getMessage().getPayload()).toURL());
+            assertNotNull(((URI) runFlowAndGetPayload("create-object-presigned-uri")).toURL());
 
         } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            fail();
+            fail(ConnectorTestUtils.getStackTrace(e));
         }
-
     }
 
     @Category({SmokeTests.class, RegressionTests.class})
@@ -226,24 +140,20 @@ public class CreateObjectPresignedURITestCases extends S3TestParent {
 
         File temp = null;
 
-        testObjects.putAll((HashMap<String, Object>) context.getBean("createFileObjectPresignedURITestData"));
+        upsertBeanFromContextOnTestRunMessage("createFileObjectPresignedURITestData");
 
         try {
 
             temp = File.createTempFile("temp-file-name", ".tmp");
 
-            testObjects.put("contentRef", temp);
+            upsertOnTestRunMessage("contentRef", temp);
 
-            MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-none");
-            createObjectFlow.process(getTestEvent(testObjects));
+            runFlowAndGetPayload("create-object-child-elements-none");
 
-            MessageProcessor createObjectPresignedURIFlow = lookupMessageProcessor("create-object-presigned-uri");
-            MuleEvent response = createObjectPresignedURIFlow.process(getTestEvent(testObjects));
+            runFlowAndGetPayload("create-object-presigned-uri");
 
         } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            fail();
+            fail(ConnectorTestUtils.getStackTrace(e));
 
         } finally {
 
@@ -259,71 +169,48 @@ public class CreateObjectPresignedURITestCases extends S3TestParent {
     @Test
     public void testCreateByteArrayObjectPresignedURIOptionalAttributes() {
 
-        testObjects.putAll((HashMap<String, Object>) context.getBean("createByteArrayObjectPresignedURITestData"));
+        upsertBeanFromContextOnTestRunMessage("createByteArrayObjectPresignedURITestData");
 
         byte data[] = bucketName.getBytes();
-        testObjects.put("contentRef", data);
+        upsertOnTestRunMessage("contentRef", data);
 
         try {
+            upsertOnTestRunMessage("versioningStatus", "ENABLED");
 
-            testObjects.put("versioningStatus", "ENABLED");
+            runFlowAndGetPayload("set-bucket-versioning-status");
 
-            MessageProcessor setBucketVersioningStatusFlow = lookupMessageProcessor("set-bucket-versioning-status");
-            setBucketVersioningStatusFlow.process(getTestEvent(testObjects));
+            upsertOnTestRunMessage("versionId", runFlowAndGetPayload("create-object-child-elements-none").toString());
 
-            MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-none");
-            MuleEvent createObjectResponse = createObjectFlow.process(getTestEvent(testObjects));
+            runFlowAndGetPayload("create-object-child-elements-none");
 
-            testObjects.put("versionId", (String) createObjectResponse.getMessage().getPayload());
-
-            createObjectFlow = lookupMessageProcessor("create-object-child-elements-none");
-            createObjectFlow.process(getTestEvent(testObjects));
-
-            MessageProcessor createObjectPresignedURIFlow = lookupMessageProcessor("create-object-presigned-uri-optional-attributes");
-            MuleEvent createObjectPresignedURIResponse = createObjectPresignedURIFlow.process(getTestEvent(testObjects));
-
-            assertNotNull(((URI) createObjectPresignedURIResponse.getMessage().getPayload()).toURL());
+            assertNotNull(((URI) runFlowAndGetPayload("create-object-presigned-uri-optional-attributes")).toURL());
 
         } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            fail();
+            fail(ConnectorTestUtils.getStackTrace(e));
         }
-
     }
 
     @Category({RegressionTests.class})
     @Test
     public void testCreateStringObjectPresignedURIOptionalAttributes() {
 
-        testObjects.putAll((HashMap<String, Object>) context.getBean("createStringObjectPresignedURITestData"));
+        upsertBeanFromContextOnTestRunMessage("createStringObjectPresignedURITestData");
 
         try {
 
-            testObjects.put("versioningStatus", "ENABLED");
+            upsertOnTestRunMessage("versioningStatus", "ENABLED");
 
-            MessageProcessor setBucketVersioningStatusFlow = lookupMessageProcessor("set-bucket-versioning-status");
-            setBucketVersioningStatusFlow.process(getTestEvent(testObjects));
+            runFlowAndGetPayload("set-bucket-versioning-status");
 
-            MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-none");
-            MuleEvent createObjectResponse = createObjectFlow.process(getTestEvent(testObjects));
+            upsertOnTestRunMessage("versionId", runFlowAndGetPayload("create-object-child-elements-none").toString());
 
-            testObjects.put("versionId", (String) createObjectResponse.getMessage().getPayload());
+            runFlowAndGetPayload("create-object-child-elements-none");
 
-            createObjectFlow = lookupMessageProcessor("create-object-child-elements-none");
-            createObjectFlow.process(getTestEvent(testObjects));
-
-            MessageProcessor createObjectPresignedURIFlow = lookupMessageProcessor("create-object-presigned-uri-optional-attributes");
-            MuleEvent createObjectPresignedURIResponse = createObjectPresignedURIFlow.process(getTestEvent(testObjects));
-
-            assertNotNull(((URI) createObjectPresignedURIResponse.getMessage().getPayload()).toURL());
+            assertNotNull(((URI) runFlowAndGetPayload("create-object-presigned-uri-optional-attributes")).toURL());
 
         } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            fail();
+            fail(ConnectorTestUtils.getStackTrace(e));
         }
-
     }
 
     @Category({RegressionTests.class})
@@ -332,47 +219,37 @@ public class CreateObjectPresignedURITestCases extends S3TestParent {
 
         File temp = null;
 
-        testObjects.putAll((HashMap<String, Object>) context.getBean("createFileObjectPresignedURITestData"));
+        upsertBeanFromContextOnTestRunMessage("createFileObjectPresignedURITestData");
 
         try {
 
-            testObjects.put("versioningStatus", "ENABLED");
+            upsertOnTestRunMessage("versioningStatus", "ENABLED");
 
-            MessageProcessor setBucketVersioningStatusFlow = lookupMessageProcessor("set-bucket-versioning-status");
-            setBucketVersioningStatusFlow.process(getTestEvent(testObjects));
+            runFlowAndGetPayload("set-bucket-versioning-status");
 
             temp = File.createTempFile("temp-file-name", ".tmp");
 
-            testObjects.put("contentRef", temp);
+            upsertOnTestRunMessage("contentRef", temp);
 
-            MessageProcessor createObjectFlow = lookupMessageProcessor("create-object-child-elements-none");
-            MuleEvent createObjectResponse = createObjectFlow.process(getTestEvent(testObjects));
             Thread.sleep(5000);
-            testObjects.put("versionId", (String) createObjectResponse.getMessage().getPayload());
+            upsertOnTestRunMessage("versionId", runFlowAndGetPayload("create-object-child-elements-none").toString());
 
-            createObjectFlow = lookupMessageProcessor("create-object-child-elements-none");
-            createObjectFlow.process(getTestEvent(testObjects));
+            runFlowAndGetPayload("create-object-child-elements-none");
             Thread.sleep(5000);
 
-            MessageProcessor createObjectPresignedURIFlow = lookupMessageProcessor("create-object-presigned-uri-optional-attributes");
-            MuleEvent createObjectPresignedURIResponse = createObjectPresignedURIFlow.process(getTestEvent(testObjects));
-            Thread.sleep(5000);
-
-            assertNotNull(((URI) createObjectPresignedURIResponse.getMessage().getPayload()).toURL());
+            assertNotNull(((URI) runFlowAndGetPayload("create-object-presigned-uri-optional-attributes")).toURL());
 
         } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            fail();
-
+            fail(ConnectorTestUtils.getStackTrace(e));
         } finally {
-
             if (temp != null) {
                 temp.delete();
             }
-
         }
-
     }
 
+    @After
+    public void tearDown() throws Exception {
+        runFlowAndGetPayload("delete-bucket-optional-attributes");
+    }
 }
